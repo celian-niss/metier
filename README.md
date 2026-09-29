@@ -133,3 +133,59 @@ copy .env.example .env        (puis remplir avec ses identifiants francetravail.
   (GitHub) : jamais dans un fichier versionné.
 - Un canal, une requête, une date : chaque chiffre du site les affiche.
 - Pas de scraping de LinkedIn, APEC ou Indeed (interdit par leurs CGU).
+
+
+---
+
+## Pulse Emploi — branche multisource
+
+Une nouvelle architecture est développée sur la branche `dev-multisource` afin de transformer
+le projet de démonstration en observatoire indépendant, multisource et extensible.
+
+### Nouvelle chaîne
+
+```
+France Travail ─┐
+                ├─> collecteurs ─> normalisation ─> dédoublonnage ─> data/multisource.json
+Adzuna ─────────┘                                                └─> observatoire.html
+```
+
+- `scripts/collecteurs/france_travail.py` : API officielle France Travail.
+- `scripts/collecteurs/adzuna.py` : API officielle Adzuna France.
+- `scripts/normaliser.py` : conversion vers un modèle commun.
+- `scripts/dedoublonner.py` : fusion des doublons, y compris entre plateformes.
+- `scripts/collecter.py` : orchestration complète et génération du fichier public.
+- `observatoire.html` : nouvelle interface Pulse Emploi.
+- `tests/test_multisource.py` : tests de normalisation et de déduplication.
+
+### Secrets GitHub
+
+Dans **Settings → Secrets and variables → Actions**, renseigner au minimum une source :
+
+```
+FT_CLIENT_ID
+FT_CLIENT_SECRET
+```
+
+et/ou :
+
+```
+ADZUNA_APP_ID
+ADZUNA_APP_KEY
+```
+
+Le pipeline ignore automatiquement une source dont les identifiants sont absents.
+
+### Lancer localement
+
+```bash
+python -m pip install -r requirements.txt
+python -m pytest -q
+python scripts/collecter.py
+python -m http.server 8125
+```
+
+Puis ouvrir `http://localhost:8125/observatoire.html`.
+
+L'ancien pipeline et `data/resume.json` sont volontairement conservés pendant la migration
+afin de pouvoir comparer les résultats sans casser le site existant.
