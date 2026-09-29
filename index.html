@@ -9,31 +9,38 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=6">
+<link rel="stylesheet" href="assets/commun.css?v=7">
 </head>
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Les métiers du marketing — le marché, lu dans les offres</h1>
+  <h1>Le marché du marketing, en clair.</h1>
   <p class="sous" id="sous">Chargement des données…</p>
 
   <!-- ============ 1. FILTRES (posés par commun.js) ============ -->
   <div id="filtres-ici"></div>
 
-  <section class="lecture" aria-labelledby="lecture-titre">
-    <div>
-      <span class="sur-titre">Lecture rapide</span>
-      <h2 id="lecture-titre">Ce que dit la sélection</h2>
+  <!-- ============ 2. ESSENTIEL ============ -->
+  <section class="section-essentiel">
+    <div class="titre-section"><div><span class="sur-titre">Vue d'ensemble</span><h2>L'essentiel de votre sélection</h2></div><span class="aide-section">Les 4 chiffres à retenir</span></div>
+    <div class="chiffres chiffres-principaux" id="chiffres"></div>
+    <div class="lecture lecture-legere" aria-labelledby="lecture-titre">
+      <div><h3 id="lecture-titre">À retenir</h3></div>
+      <div class="lecture-grille" id="lecture-marche"></div>
     </div>
-    <div class="lecture-grille" id="lecture-marche"></div>
   </section>
 
-  <!-- ============ 2. EN CHIFFRES ============ -->
-  <h2>En chiffres</h2>
-  <div class="chiffres" id="chiffres"></div>
+  <!-- ============ 3. CHOISIR UNE ANALYSE ============ -->
+  <div class="titre-section"><div><span class="sur-titre">Approfondir</span><h2>Choisir une analyse</h2></div><span class="aide-section">Vos filtres restent actifs d'une page à l'autre</span></div>
+  <div class="liens">
+    <a class="lien" href="salaires.html"><b>Salaires</b><span><i id="cle-salaires">—</i><br>Fourchettes et niveaux de rémunération.</span></a>
+    <a class="lien" href="exigences.html"><b>Compétences</b><span><i id="cle-exigences">—</i><br>Expérience, diplôme, outils et compétences.</span></a>
+    <a class="lien" href="recruteurs.html"><b>Recruteurs</b><span><i id="cle-recruteurs">—</i><br>Entreprises, secteurs et dernières offres.</span></a>
+    <a class="lien" href="mouvement.html"><b>Évolution</b><span><i id="cle-mouvement">—</i><br>Fraîcheur, historique et qualité des données.</span></a>
+  </div>
 
-  <!-- ============ 3. OÙ SONT LES OFFRES ============ -->
-  <h2>Où sont les offres</h2>
+  <!-- ============ 4. CARTE ============ -->
+  <div class="titre-section"><div><span class="sur-titre">Géographie</span><h2>Où sont les offres ?</h2></div></div>
   <div class="carte large"><h3>Chaque point est une offre — survolez pour la lire, cliquez pour l'ouvrir</h3>
     <div class="carte-outils">
       <button data-vue="france">France</button>
@@ -52,19 +59,10 @@
       <p class="note">« Franchise », « Profession libérale » et « Profession commerciale » ne sont pas des emplois salariés : il s'agit de travailler à son compte. Le filtre « Indépendant », en haut, les regroupe.</p></div>
   </div>
 
-  <!-- ============ 4. LE RESTE, PAGE PAR PAGE ============ -->
-  <h2>Le reste, page par page <small>— vos filtres vous suivent</small></h2>
-  <div class="liens">
-    <a class="lien" href="salaires.html"><b>Ce que ça paie</b><span><i id="cle-salaires">—</i> — fourchettes par niveau, par métier, par contrat, et Île-de-France ou ailleurs.</span></a>
-    <a class="lien" href="exigences.html"><b>Ce qu'on vous demande</b><span><i id="cle-exigences">—</i> — expérience, formation, outils et compétences cités dans les annonces.</span></a>
-    <a class="lien" href="recruteurs.html"><b>Qui recrute</b><span><i id="cle-recruteurs">—</i> — entreprises, secteurs, niveau de poste par métier, et les dernières offres.</span></a>
-    <a class="lien" href="mouvement.html"><b>Le marché bouge</b><span><i id="cle-mouvement">—</i> — les extractions successives, la fraîcheur des annonces, et les limites de ces chiffres.</span></a>
-  </div>
-
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=6"></script>
+<script src="assets/commun.js?v=7"></script>
 <script>
 /* ============ Accueil : chiffres, carte, départements, contrats ============ */
 let carte, calque;
@@ -78,14 +76,10 @@ function rendre(offres, D) {
   const mins = avecSal.map(o => o.smin), maxs = avecSal.map(o => o.smax != null ? o.smax : o.smin);
   const debutants = offres.filter(debutantAccepte).length;
   const tuiles = [
-    [n, "offres sélectionnées"],
-    [offres.filter(o => o.dep === "63").length, "dans le Puy-de-Dôme"],
+    [n, "offres dans votre sélection"],
     [offres.filter(o => AURA.has(o.dep)).length, "en Auvergne-Rhône-Alpes"],
     [offres.filter(o => familleContrat(o) === "alt").length, "en alternance"],
-    [pct(debutants, n) + " %", `acceptent un débutant (${debutants})`],
-    [pct(avecSal.length, n) + " %", `affichent un salaire (${avecSal.length})`],
-    [avecSal.length ? euro(mediane(mins), 100) + " → " + euro(mediane(maxs), 100) : "—", "brut annuel affiché, médiane des minima → des maxima"],
-    [avecSal.length ? euro(net(mediane(mins)), 10) + " → " + euro(net(mediane(maxs)), 10) : "—", "net mensuel estimé (× 0,78 / 12, avant impôt)"],
+    [avecSal.length ? euro(mediane(mins), 100) + " → " + euro(mediane(maxs), 100) : "—", "fourchette salariale médiane affichée"],
   ];
   document.getElementById("chiffres").innerHTML = tuiles.map(([v, l]) => `<div class="chiffre"><b>${v}</b><span>${l}</span></div>`).join("");
 
@@ -95,11 +89,9 @@ function rendre(offres, D) {
   const tele = offres.filter(o => o.teletravail).length;
   const fraiches7 = offres.filter(o => { const j = age(o); return j != null && j >= 0 && j < 7; }).length;
   document.getElementById("lecture-marche").innerHTML = [
-    ["Territoire le plus actif", topDep ? `${topDep[0]} · ${topDep[1]} offres` : "—"],
     ["Contrat dominant", topContrat ? `${topContrat[0]} · ${pct(topContrat[1], n)} %` : "—"],
     ["Outil le plus cité", topOutil ? `${topOutil[0]} · ${topOutil[1]} offres` : "—"],
-    ["Télétravail mentionné", `${pct(tele, n)} % · ${tele} offres`],
-    ["Offres de moins de 7 jours", `${pct(fraiches7, n)} % · ${fraiches7} offres`],
+    ["Annonces récentes", `${pct(fraiches7, n)} % ont moins de 7 jours`],
   ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
 
   /* ---- Carte + départements + contrats ---- */
