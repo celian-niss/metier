@@ -305,7 +305,10 @@ def qualite_donnees(offres):
         titre = re.sub(r"\W+", " ", (o.get("intitule") or "").lower()).strip()
         entreprise = re.sub(r"\W+", " ", (o.get("entreprise") or "").lower()).strip()
         signatures[(titre, entreprise, o.get("dep") or "")] += 1
-    doublons_probables = sum(v - 1 for v in signatures.values() if v > 1 and any(signatures))
+    doublons_probables = sum(
+        v - 1 for (titre, entreprise, dep), v in signatures.items()
+        if v > 1 and titre and (entreprise or dep)
+    )
 
     def pct_couv(test):
         return round(100 * sum(1 for o in offres if test(o)) / n)
