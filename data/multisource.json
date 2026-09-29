@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "date": null,
+  "collecte_utc": null,
+  "perimetre": "Marketing, communication et digital — France",
+  "requetes": [],
+  "stats": {
+    "offres_uniques": 0,
+    "offres_avant_dedoublonnage": 0,
+    "doublons_fusionnes": 0,
+    "sources_actives": [],
+    "par_source": {},
+    "contrats": {},
+    "competences": {},
+    "villes": {}
+  },
+  "erreurs": {},
+  "offres": []
+}
