@@ -15,6 +15,11 @@
 
   <div id="filtres-ici"></div>
 
+  <section class="lecture compact">
+    <div><span class="sur-titre">Lecture rapide</span><h2>Les signaux à retenir</h2></div>
+    <div class="lecture-grille" id="lecture-exigences"></div>
+  </section>
+
   <div class="chiffres" id="chiffres-demande" style="margin-top:24px"></div>
   <div class="grille" style="margin-top:16px">
     <div class="carte"><h3>Combien d'expérience faut-il ? <small>— chaque barre est découpée par niveau de poste : la couleur dit qui est concerné</small></h3><div class="zone"><canvas id="g-experience"></canvas></div></div>
@@ -45,6 +50,17 @@ function rendre(offres, D) {
     [avecQuali.length ? pct(cadres, avecQuali.length) + " %" : "—", `au statut cadre, parmi les ${avecQuali.length} offres qui précisent une qualification`],
   ];
   document.getElementById("chiffres-demande").innerHTML = tuiles2.map(([v, l]) => `<div class="chiffre"><b>${v}</b><span>${l}</span></div>`).join("");
+
+  const topOutil = compter(offres.flatMap(o => o.outils || []), x => x)[0];
+  const topComp = compter(offres.flatMap(o => o.competences || []), x => x)[0];
+  const anglais = offres.filter(o => (o.outils || []).includes("Anglais")).length;
+  const data = offres.filter(o => (o.outils || []).some(x => /Analytics|Power BI|SQL|Tag Manager/.test(x))).length;
+  document.getElementById("lecture-exigences").innerHTML = [
+    ["Outil le plus cité", topOutil ? `${topOutil[0]} · ${topOutil[1]} offres` : "—"],
+    ["Compétence FT la plus fréquente", topComp ? `${topComp[0]} · ${topComp[1]} offres` : "—"],
+    ["Anglais mentionné", `${pct(anglais, n)} %`],
+    ["Culture data / analytics", `${pct(data, n)} %`],
+  ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
 
   empilees("g-experience", EXPS, EXPS.map(t => offres.filter(o => trancheExp(o) === t)), false);
   empilees("g-formation", FORMATIONS, FORMATIONS.map(fo => avecForm.filter(o => o.formation === fo)), false);
