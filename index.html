@@ -93,13 +93,13 @@ function rendre(offres, D) {
   const topContrat = compter(offres, libContratOffre)[0];
   const topOutil = compter(offres.flatMap(o => o.outils || []), x => x)[0];
   const tele = offres.filter(o => o.teletravail).length;
-  const fraiches = offres.filter(o => { const j = age(o); return j != null && j >= 0 && j < 7; }).length;
+  const fraiches7 = offres.filter(o => { const j = age(o); return j != null && j >= 0 && j < 7; }).length;
   document.getElementById("lecture-marche").innerHTML = [
     ["Territoire le plus actif", topDep ? `${topDep[0]} · ${topDep[1]} offres` : "—"],
     ["Contrat dominant", topContrat ? `${topContrat[0]} · ${pct(topContrat[1], n)} %` : "—"],
     ["Outil le plus cité", topOutil ? `${topOutil[0]} · ${topOutil[1]} offres` : "—"],
     ["Télétravail mentionné", `${pct(tele, n)} % · ${tele} offres`],
-    ["Offres de moins de 7 jours", `${pct(fraiches, n)} % · ${fraiches} offres`],
+    ["Offres de moins de 7 jours", `${pct(fraiches7, n)} % · ${fraiches7} offres`],
   ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
 
   /* ---- Carte + départements + contrats ---- */
