@@ -50,8 +50,11 @@ OUTILS = {
     "Excel": ["excel"],
     "Power BI / Looker": ["power bi", "looker", "data studio"],
     "SQL / Python": ["sql", "python"],
-    "Marketing automation": ["automation", "automatisation", "zapier", "make", "n8n"],
-    "IA générative": ["ia", "intelligence artificielle", "chatgpt", "ia générative", "genai", "llm"],
+    "Marketing automation": ["marketing automation", "automatisation marketing", "zapier", "make.com", "n8n"],
+    "UX / CRO": ["ux", "expérience utilisateur", "experience utilisateur", "cro", "conversion rate optimization"],
+    "AB testing": ["a/b test", "ab test", "a-b test", "testing"],
+    "Tag Manager": ["google tag manager", "gtm"],
+    "IA générative": ["intelligence artificielle", "chatgpt", "ia générative", "ia generative", "genai", "llm"],
     "Anglais": ["anglais", "english"],
 }
 REGEX_OUTILS = {nom: re.compile(r"(?<![\w-])(" + "|".join(re.escape(v) for v in variantes) + r")(?![\w-])")
@@ -272,6 +275,57 @@ class Geocodeur:
         (self.dossier / "departements.json").write_text(json.dumps(self.departements), encoding="utf-8")
 
 
+def qualite_donnees(offres):
+    """Mesure la couverture des principaux champs utilisés par les pages."""
+    n = len(offres)
+    if not n:
+        return {
+            "total": 0, "salaire_pct": 0, "position_pct": 0, "formation_pct": 0,
+            "competences_pct": 0, "entreprise_pct": 0, "teletravail_pct": 0,
+            "fraiches_7j_pct": 0, "doublons_probables": 0,
+        }
+
+    from datetime import datetime
+    jour_ref = max((o.get("vu_le") or "" for o in offres), default="")
+    try:
+        ref = datetime.strptime(jour_ref, "%Y-%m-%d").date()
+    except ValueError:
+        ref = None
+
+    def age_jours(o):
+        if not ref or not o.get("date"):
+            return None
+        try:
+            return (ref - datetime.strptime(o["date"], "%Y-%m-%d").date()).days
+        except ValueError:
+            return None
+
+    signatures = defaultdict(int)
+    for o in offres:
+        titre = re.sub(r"\W+", " ", (o.get("intitule") or "").lower()).strip()
+        entreprise = re.sub(r"\W+", " ", (o.get("entreprise") or "").lower()).strip()
+        signatures[(titre, entreprise, o.get("dep") or "")] += 1
+    doublons_probables = sum(
+        v - 1 for (titre, entreprise, dep), v in signatures.items()
+        if v > 1 and titre and (entreprise or dep)
+    )
+
+    def pct_couv(test):
+        return round(100 * sum(1 for o in offres if test(o)) / n)
+
+    return {
+        "total": n,
+        "salaire_pct": pct_couv(lambda o: o.get("smin") is not None),
+        "position_pct": pct_couv(lambda o: o.get("lat") is not None),
+        "formation_pct": pct_couv(lambda o: bool(o.get("formation"))),
+        "competences_pct": pct_couv(lambda o: bool(o.get("competences"))),
+        "entreprise_pct": pct_couv(lambda o: bool(o.get("entreprise"))),
+        "teletravail_pct": pct_couv(lambda o: bool(o.get("teletravail"))),
+        "fraiches_7j_pct": pct_couv(lambda o: (age_jours(o) is not None and 0 <= age_jours(o) < 7)),
+        "doublons_probables": doublons_probables,
+    }
+
+
 def main():
     jours = sorted((RACINE / "data" / "actives").glob("*.csv"))
     if not jours:
@@ -356,6 +410,7 @@ def main():
         "formations": FORMATIONS,
         "versions_conservees": nb_versions,
         "sans_position": sum(1 for o in offres if o["lat"] is None),
+        "qualite": qualite_donnees(offres),
         "serie": [{"date": d, "par_metier": m} for d, m in sorted(serie.items())],
         "offres": offres,
     }

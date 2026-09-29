@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le marché bouge — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=3">
+<link rel="stylesheet" href="assets/commun.css?v=5">
 </head>
 <body>
 <main>
@@ -14,6 +14,11 @@
   <p class="sous" id="sous">Chargement des données…</p>
 
   <div id="filtres-ici"></div>
+
+  <section class="lecture compact">
+    <div><span class="sur-titre">Qualité des données</span><h2>Ce qu'on peut vraiment lire</h2></div>
+    <div class="lecture-grille" id="qualite-donnees"></div>
+  </section>
 
   <div class="grille" style="margin-top:24px">
     <div class="carte"><h3>Offres actives à chaque extraction</h3><div class="zone"><canvas id="g-serie"></canvas></div>
@@ -35,11 +40,21 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=3"></script>
+<script src="assets/commun.js?v=5"></script>
 <script>
 /* ============ Le marché bouge ============ */
 function rendre(offres, D) {
   const f = Commun.f;
+
+  const q = D.qualite || {};
+  document.getElementById("qualite-donnees").innerHTML = [
+    ["Salaires renseignés", (q.salaire_pct ?? 0) + " %"],
+    ["Positions cartographiables", (q.position_pct ?? 0) + " %"],
+    ["Formation renseignée", (q.formation_pct ?? 0) + " %"],
+    ["Compétences FT disponibles", (q.competences_pct ?? 0) + " %"],
+    ["Employeur identifié", (q.entreprise_pct ?? 0) + " %"],
+    ["Doublons probables", q.doublons_probables ?? 0],
+  ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
 
   const serie = (D.serie || []).map(j => ({ date: j.date, total: [...f.metiers].reduce((s, c) => s + ((j.par_metier && j.par_metier[c]) || 0), 0) }));
   dessiner("g-serie", "line",
@@ -47,7 +62,12 @@ function rendre(offres, D) {
     { scales: { y: { beginAtZero: true } } });
   document.getElementById("note-serie").textContent = serie.length < 2
     ? "Une seule extraction pour l'instant : la tendance apparaîtra au fil des jours, l'Action GitHub relance la collecte chaque matin."
-    : `${serie.length} extractions, du ${dateFr(serie[0].date)} au ${dateFr(serie[serie.length - 1].date)}. Ce compte suit les métiers cochés, pas les autres filtres.`;
+    : (() => {
+        const first = serie[0].total, last = serie[serie.length - 1].total;
+        const evol = first ? Math.round((last-first)*100/first) : 0;
+        const signe = evol > 0 ? "+" : "";
+        return `${serie.length} extractions, du ${dateFr(serie[0].date)} au ${dateFr(serie[serie.length - 1].date)}. Évolution du volume suivi : ${signe}${evol} %. Ce compte suit les métiers cochés, pas les autres filtres.`;
+      })();
 
   const FRAIS = [["Moins de 7 jours", j => j < 7], ["7 à 30 jours", j => j >= 7 && j < 30], ["1 à 3 mois", j => j >= 30 && j < 90], ["Plus de 3 mois", j => j >= 90]];
   const ages = offres.map(age).filter(j => j != null && j >= 0);

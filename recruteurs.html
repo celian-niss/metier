@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Qui recrute — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=4">
+<link rel="stylesheet" href="assets/commun.css?v=5">
 </head>
 <body>
 <main>
@@ -14,6 +14,11 @@
   <p class="sous" id="sous">Chargement des données…</p>
 
   <div id="filtres-ici"></div>
+
+  <section class="lecture compact">
+    <div><span class="sur-titre">Lecture rapide</span><h2>Structure du recrutement</h2></div>
+    <div class="lecture-grille" id="lecture-recruteurs"></div>
+  </section>
 
   <div class="grille" style="margin-top:24px">
     <div class="carte"><h3>Entreprises qui publient le plus</h3><div class="zone"><canvas id="g-entreprises"></canvas></div></div>
@@ -29,7 +34,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=4"></script>
+<script src="assets/commun.js?v=5"></script>
 <script>
 /* ============ Qui recrute ============ */
 function rendre(offres, D) {
@@ -37,6 +42,16 @@ function rendre(offres, D) {
   const n = offres.length;
 
   const ent = compter(offres, o => o.entreprise).slice(0, 10);
+  const toutesEnt = compter(offres, o => o.entreprise);
+  const top5 = toutesEnt.slice(0,5).reduce((s,x)=>s+x[1],0);
+  const nommes = offres.filter(o => o.entreprise).length;
+  const interims = offres.filter(o => /intérim|interim|recrutement/i.test((o.entreprise||"")+" "+(o.secteur||""))).length;
+  document.getElementById("lecture-recruteurs").innerHTML = [
+    ["Employeurs nommés", `${pct(nommes, n)} % des offres`],
+    ["Concentration Top 5", `${pct(top5, n)} % des offres`],
+    ["Intermédiaires recrutement", `${pct(interims, n)} %`],
+    ["Offres ouvertes débutants", `${pct(offres.filter(debutantAccepte).length, n)} %`],
+  ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
   zoneSelonBarres("g-entreprises", ent.length, 34);
   barres("g-entreprises", ent.map(x => enLignes(x[0], 26)), ent.map(x => x[1]), true, " offres");
   const sec = compter(offres, o => secteurCourt(o.secteur)).slice(0, 8);

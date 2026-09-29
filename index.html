@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=3">
+<link rel="stylesheet" href="assets/commun.css?v=5">
 </head>
 <body>
 <main>
@@ -19,6 +19,14 @@
 
   <!-- ============ 1. FILTRES (posés par commun.js) ============ -->
   <div id="filtres-ici"></div>
+
+  <section class="lecture" aria-labelledby="lecture-titre">
+    <div>
+      <span class="sur-titre">Lecture rapide</span>
+      <h2 id="lecture-titre">Ce que dit la sélection</h2>
+    </div>
+    <div class="lecture-grille" id="lecture-marche"></div>
+  </section>
 
   <!-- ============ 2. EN CHIFFRES ============ -->
   <h2>En chiffres</h2>
@@ -56,7 +64,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=3"></script>
+<script src="assets/commun.js?v=5"></script>
 <script>
 /* ============ Accueil : chiffres, carte, départements, contrats ============ */
 let carte, calque;
@@ -80,6 +88,19 @@ function rendre(offres, D) {
     [avecSal.length ? euro(net(mediane(mins)), 10) + " → " + euro(net(mediane(maxs)), 10) : "—", "net mensuel estimé (× 0,78 / 12, avant impôt)"],
   ];
   document.getElementById("chiffres").innerHTML = tuiles.map(([v, l]) => `<div class="chiffre"><b>${v}</b><span>${l}</span></div>`).join("");
+
+  const topDep = compter(offres, o => o.dep || null)[0];
+  const topContrat = compter(offres, libContratOffre)[0];
+  const topOutil = compter(offres.flatMap(o => o.outils || []), x => x)[0];
+  const tele = offres.filter(o => o.teletravail).length;
+  const fraiches7 = offres.filter(o => { const j = age(o); return j != null && j >= 0 && j < 7; }).length;
+  document.getElementById("lecture-marche").innerHTML = [
+    ["Territoire le plus actif", topDep ? `${topDep[0]} · ${topDep[1]} offres` : "—"],
+    ["Contrat dominant", topContrat ? `${topContrat[0]} · ${pct(topContrat[1], n)} %` : "—"],
+    ["Outil le plus cité", topOutil ? `${topOutil[0]} · ${topOutil[1]} offres` : "—"],
+    ["Télétravail mentionné", `${pct(tele, n)} % · ${tele} offres`],
+    ["Offres de moins de 7 jours", `${pct(fraiches7, n)} % · ${fraiches7} offres`],
+  ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
 
   /* ---- Carte + départements + contrats ---- */
   calque.clearLayers();
