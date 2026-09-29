@@ -205,12 +205,20 @@ function flottantes(id, lignes) {
    ============================================================ */
 const cochees = sel => new Set([...document.querySelectorAll(sel + " input:checked")].map(i => i.value));
 function etatFiltres() {
-  return { metiers: cochees("#metiers"), contrats: cochees("#f-contrats"), niveaux: cochees("#f-niveaux") };
+  return {
+    metiers: cochees("#metiers"),
+    contrats: cochees("#f-contrats"),
+    niveaux: cochees("#f-niveaux"),
+    competences: cochees("#f-competences")
+  };
 }
-/* Les offres retenues par les trois filtres. */
+/* Les offres retenues par les filtres. Une compétence cochée = au moins une correspondance. */
 function filtrer(f) {
   f = f || etatFiltres();
-  return D.offres.filter(o => f.metiers.has(o.rome) && f.contrats.has(familleContrat(o)) && f.niveaux.has(niv(o)));
+  return D.offres.filter(o => {
+    const competencesOk = !f.competences.size || (o.competences || []).some(x => f.competences.has(x));
+    return f.metiers.has(o.rome) && f.contrats.has(familleContrat(o)) && f.niveaux.has(niv(o)) && competencesOk;
+  });
 }
 
 /* ============================================================
@@ -230,6 +238,7 @@ const HTML_FILTRES = `
   <div class="filtres">
     <div>
       <h3>Les métiers</h3>
+      <label class="recherche-filtre"><input id="recherche-metier" type="search" placeholder="Rechercher un métier…"></label>
       <div class="metiers" id="metiers"></div>
       <div class="boutons">
         <button data-groupe="tous">Tout cocher</button>
@@ -245,6 +254,15 @@ const HTML_FILTRES = `
       <h3>Niveau de poste</h3>
       <div class="cases" id="f-niveaux"></div>
       <p class="note" style="margin:8px 0 0">Déduit de l'intitulé de l'annonce. Ces couleurs servent de repère dans toute la page.</p>
+    </div>
+    <div class="filtre-competences">
+      <h3>Compétences <small>— optionnel</small></h3>
+      <label class="recherche-filtre"><input id="recherche-competence" type="search" placeholder="SEO, CRM, GA4…"></label>
+      <div class="cases cases-competences" id="f-competences"></div>
+      <div class="boutons">
+        <button type="button" id="competences-vider">Effacer la sélection</button>
+      </div>
+      <p class="note" style="margin:8px 0 0">Si plusieurs compétences sont cochées, une offre est gardée dès qu'elle en contient au moins une.</p>
     </div>
   </div>
   <p class="compte" id="compte"></p>`;
@@ -291,7 +309,7 @@ const Commun = {
     // Compteurs dans les cases de filtre + ligne de synthèse
     CONTRATS.forEach(([k]) => { const e = document.getElementById("nb-c-" + k); if (e) e.textContent = parMetier.filter(o => familleContrat(o) === k).length; });
     NIVEAUX.forEach(([k]) => { const e = document.getElementById("nb-n-" + k); if (e) e.textContent = parMetier.filter(o => niv(o) === k).length; });
-    document.getElementById("compte").innerHTML = `<b>${n}</b> offre${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""} sur ${total} — ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} coché${f.metiers.size > 1 ? "s" : ""}.`;
+    document.getElementById("compte").innerHTML = `<b>${n}</b> offre${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""} sur ${total} — ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} coché${f.metiers.size > 1 ? "s" : ""}${f.competences.size ? ` · ${f.competences.size} compétence${f.competences.size > 1 ? "s" : ""}` : ""}.`;
     document.getElementById("aucune").hidden = n > 0;
     const resume = document.getElementById("resume-filtres");
     if (resume) resume.textContent = `Filtres (${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""}, ${n} offre${n > 1 ? "s" : ""})`;
@@ -300,7 +318,7 @@ const Commun = {
     if (n === 0) { const d = document.querySelector("details.carte"); if (d) d.open = true; }
 
     // Mémorisation des trois filtres ensemble : ils suivent d'une page à l'autre.
-    try { localStorage.setItem("metiers-filtres", JSON.stringify({ metiers: [...f.metiers], contrats: [...f.contrats], niveaux: [...f.niveaux] })); } catch (e) {}
+    try { localStorage.setItem("metiers-filtres", JSON.stringify({ metiers: [...f.metiers], contrats: [...f.contrats], niveaux: [...f.niveaux], competences: [...f.competences] })); } catch (e) {}
 
     Commun.rendre(offres, D);
   },
@@ -352,6 +370,35 @@ const Commun = {
         majGroupes(); Commun.rafraichir();
       }));
       majGroupes();
+
+      // Recherche instantanée dans les métiers : masque seulement l'affichage, pas la sélection.
+      const rechercheMetier = document.getElementById("recherche-metier");
+      if (rechercheMetier) rechercheMetier.addEventListener("input", () => {
+        const q = rechercheMetier.value.trim().toLowerCase();
+        document.querySelectorAll("#metiers label").forEach(l => {
+          l.hidden = !!q && !l.textContent.toLowerCase().includes(q);
+        });
+      });
+
+      // --- Filtre compétences : top compétences observées dans les offres ---
+      const freqComp = compter(d.offres.flatMap(o => o.competences || []), x => x).slice(0, 24);
+      const memoComp = memoA("competences", []);
+      document.getElementById("f-competences").innerHTML = freqComp.map(([nom, nb]) =>
+        `<label><input type="checkbox" value="${nom.replace(/"/g, "&quot;")}" ${memoComp.includes(nom) ? "checked" : ""}> ${nom} <small>${nb}</small></label>`
+      ).join("");
+      document.getElementById("f-competences").addEventListener("change", Commun.rafraichir);
+      const rechercheCompetence = document.getElementById("recherche-competence");
+      if (rechercheCompetence) rechercheCompetence.addEventListener("input", () => {
+        const q = rechercheCompetence.value.trim().toLowerCase();
+        document.querySelectorAll("#f-competences label").forEach(l => {
+          l.hidden = !!q && !l.textContent.toLowerCase().includes(q);
+        });
+      });
+      const viderComp = document.getElementById("competences-vider");
+      if (viderComp) viderComp.addEventListener("click", () => {
+        document.querySelectorAll("#f-competences input").forEach(i => { i.checked = false; });
+        Commun.rafraichir();
+      });
 
       // --- Filtre type de contrat ---
       const memoC = memoA("contrats", CONTRATS.map(x => x[0]));

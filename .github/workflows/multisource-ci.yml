@@ -19,3 +19,4 @@ jobs:
         with:
           node-version: "20"
       - run: node --check assets/observatoire.js
+      - run: node --check assets/commun.js
