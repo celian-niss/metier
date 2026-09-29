@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Pulse Emploi — Observatoire Marketing & Digital</title>
+  <meta name="description" content="Observatoire multisource des offres d'emploi en marketing, communication et digital en France.">
+  <link rel="stylesheet" href="assets/observatoire.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="observatoire.html"><span class="brand-mark">P</span><span>Pulse Emploi</span></a>
+    <div class="status"><span id="status-dot"></span><span id="maj">Chargement…</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Observatoire multisource</p>
+        <h1>Le marché du marketing et du digital, <em>en données.</em></h1>
+        <p class="intro">France Travail et Adzuna réunis dans une seule lecture : offres, contrats, compétences, territoires et signaux du marché.</p>
+      </div>
+      <div class="hero-card">
+        <span class="hero-card-label">Périmètre</span>
+        <strong>Marketing · Communication · Digital</strong>
+        <span>France entière</span>
+      </div>
+    </section>
+
+    <section class="filters">
+      <label class="search"><span>⌕</span><input id="q" type="search" placeholder="Métier, entreprise, compétence, ville…"></label>
+      <select id="source"><option value="">Toutes les sources</option></select>
+      <select id="contrat"><option value="">Tous les contrats</option></select>
+      <label class="check"><input id="remote" type="checkbox"> Télétravail mentionné</label>
+      <button id="reset" type="button">Réinitialiser</button>
+    </section>
+
+    <section class="kpis">
+      <article><span>Offres uniques</span><strong id="k-offres">—</strong><small id="k-brut">—</small></article>
+      <article><span>Doublons fusionnés</span><strong id="k-doublons">—</strong><small>entre les sources</small></article>
+      <article><span>Sources actives</span><strong id="k-sources">—</strong><small id="k-source-names">—</small></article>
+      <article><span>Résultats filtrés</span><strong id="k-filtres">—</strong><small>selon vos critères</small></article>
+    </section>
+
+    <section class="grid">
+      <article class="panel panel-wide">
+        <div class="panel-head"><div><p class="eyebrow">Offres</p><h2>Explorer le marché</h2></div><span id="nb-resultats"></span></div>
+        <div id="offres" class="jobs"></div>
+      </article>
+
+      <aside class="side">
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Compétences</p><h2>Les plus citées</h2></div></div>
+          <div class="chart-wrap"><canvas id="chart-competences"></canvas></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Territoires</p><h2>Villes les plus présentes</h2></div></div>
+          <div id="villes" class="rank"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">Méthode</p><h2>Pourquoi ces chiffres ?</h2></div></div>
+          <p class="method">Les annonces sont collectées via des API officielles, converties dans un format commun puis dédupliquées lorsqu'une même offre apparaît sur plusieurs plateformes.</p>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <footer>Pulse Emploi · Projet étudiant · Données issues des sources affichées dans chaque annonce.</footer>
+  <script src="assets/observatoire.js"></script>
+</body>
+</html>
