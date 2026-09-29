@@ -8,9 +8,67 @@ function median(a){const v=a.filter(Number.isFinite).sort((x,y)=>x-y);if(!v.leng
 function quantile(a,q){const v=a.filter(Number.isFinite).sort((x,y)=>x-y);if(!v.length)return null;const p=(v.length-1)*q,b=Math.floor(p),r=p-b;return v[b+1]!==undefined?v[b]+r*(v[b+1]-v[b]):v[b]}
 function ageDays(d){if(!d)return null;const x=new Date(d+"T00:00:00"),now=new Date();return Math.floor((now-x)/86400000)}
 function chart(id,type,data,options={}){if(charts[id])charts[id].destroy();charts[id]=new Chart($("#"+id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},...(options.plugins||{})},scales:options.scales||{},indexAxis:options.indexAxis}})}
+const SELECTED_SKILLS=new Set();
 function current(){
  const q=$("#q").value.trim().toLowerCase(),src=$("#source").value,ct=$("#contrat").value,remote=$("#remote").checked;
- return DATA.offres.filter(o=>{const hay=[o.titre,o.entreprise,o.ville,o.description,...(o.competences||[])].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!src||(o.sources||[o.source_label]).includes(src))&&(!ct||o.contrat===ct)&&(!remote||o.teletravail)})
+ const sort=$("#sort")?.value||"recent";
+ let list=DATA.offres.filter(o=>{
+   const hay=[o.titre,o.entreprise,o.ville,o.description,...(o.competences||[])].join(" ").toLowerCase();
+   const skillsOk=!SELECTED_SKILLS.size||(o.competences||[]).some(c=>SELECTED_SKILLS.has(c));
+   return(!q||hay.includes(q))&&(!src||(o.sources||[o.source_label]).includes(src))&&(!ct||o.contrat===ct)&&(!remote||o.teletravail)&&skillsOk
+ });
+ if(sort==="salary") list.sort((a,b)=>(b.salaire_max||b.salaire_min||-1)-(a.salaire_max||a.salaire_min||-1));
+ else if(sort==="skills") list.sort((a,b)=>(b.competences||[]).length-(a.competences||[]).length);
+ else list.sort((a,b)=>(b.date_publication||"").localeCompare(a.date_publication||""));
+ return list
+}
+function allSkills(){
+ const counts={};
+ for(const o of DATA.offres)for(const c of o.competences||[])counts[c]=(counts[c]||0)+1;
+ return Object.entries(counts).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"fr"));
+}
+function renderSkillPicker(){
+ const search=($("#skill-search")?.value||"").trim().toLowerCase();
+ const rows=allSkills().filter(([name])=>!search||name.toLowerCase().includes(search));
+ $("#skill-options").innerHTML=rows.map(([name,n])=>{
+   const checked=SELECTED_SKILLS.has(name)?" checked":"";
+   return '<label class="skill-option"><input type="checkbox" value="'+esc(name)+'"'+checked+'><span>'+esc(name)+'</span><b>'+fmt(n)+'</b></label>'
+ }).join("")||'<div class="skill-empty">Aucune compétence trouvée.</div>';
+ $("#skill-options").querySelectorAll('input[type="checkbox"]').forEach(input=>input.addEventListener("change",()=>{
+   if(input.checked)SELECTED_SKILLS.add(input.value);else SELECTED_SKILLS.delete(input.value);
+   syncSkillUI();refresh();
+ }));
+}
+function syncSkillUI(){
+ const count=SELECTED_SKILLS.size;
+ $("#skill-count").textContent=count;
+ $("#skill-count").classList.toggle("active",count>0);
+ const top=allSkills().slice(0,8);
+ $("#quick-skills").innerHTML=top.map(([name,n])=>'<button type="button" class="quick-skill'+(SELECTED_SKILLS.has(name)?' active':'')+'" data-skill="'+esc(name)+'">'+esc(name)+' <span>'+fmt(n)+'</span></button>').join("");
+ $("#quick-skills").querySelectorAll(".quick-skill").forEach(btn=>btn.addEventListener("click",()=>{
+   const skill=btn.dataset.skill;if(SELECTED_SKILLS.has(skill))SELECTED_SKILLS.delete(skill);else SELECTED_SKILLS.add(skill);
+   renderSkillPicker();syncSkillUI();refresh();
+ }));
+ renderActiveFilters()
+}
+function renderActiveFilters(){
+ const chips=[];
+ const q=$("#q")?.value.trim();
+ if(q)chips.push(["q",'Recherche : “'+q+'”']);
+ if($("#source")?.value)chips.push(["source",$("#source").value]);
+ if($("#contrat")?.value)chips.push(["contrat",$("#contrat").value]);
+ if($("#remote")?.checked)chips.push(["remote","Télétravail"]);
+ for(const s of SELECTED_SKILLS)chips.push(["skill:"+s,s]);
+ $("#active-filters").innerHTML=chips.length?'<span class="active-label">Filtres actifs</span>'+chips.map(([key,label])=>'<button type="button" data-filter="'+esc(key)+'">'+esc(label)+' ×</button>').join(""):"";
+ $("#active-filters").querySelectorAll("button").forEach(btn=>btn.addEventListener("click",()=>{
+   const key=btn.dataset.filter;
+   if(key==="q")$("#q").value="";
+   else if(key==="source")$("#source").value="";
+   else if(key==="contrat")$("#contrat").value="";
+   else if(key==="remote")$("#remote").checked=false;
+   else if(key.startsWith("skill:"))SELECTED_SKILLS.delete(key.slice(6));
+   renderSkillPicker();syncSkillUI();refresh();
+ }))
 }
 function count(list,key){const m={};for(const o of list){const v=typeof key==="function"?key(o):o[key];if(v)m[v]=(m[v]||0)+1}return Object.entries(m).sort((a,b)=>b[1]-a[1])}
 function renderRank(el,entries,limit=10){el.innerHTML=entries.slice(0,limit).map(([k,v])=>'<div class="rank-row"><span>'+esc(k)+'</span><b>'+(typeof v==="number"?fmt(v):esc(v))+'</b></div>').join("")||'<span class="job-meta">Pas assez de données.</span>'}
@@ -21,7 +79,7 @@ function renderJobs(list){
 function renderMarket(list){
  const src=count(list,o=>(o.sources||[o.source_label]).join(" + "));chart("chart-sources","doughnut",{labels:src.map(x=>x[0]),datasets:[{data:src.map(x=>x[1]),backgroundColor:["#5b5cf0","#21c7a8","#f59e0b","#ef4444"]}]},{plugins:{legend:{display:true,position:"bottom"}}});
  const ct=count(list,"contrat");chart("chart-contrats","bar",{labels:ct.map(x=>x[0]),datasets:[{data:ct.map(x=>x[1]),backgroundColor:"#111827",borderRadius:6}]},{scales:{y:{beginAtZero:true}}});
- const comp={};for(const o of list)for(const c of o.competences||[])comp[c]=(comp[c]||0)+1;const topC=Object.entries(comp).sort((a,b)=>b[1]-a[1]).slice(0,10);chart("chart-competences","bar",{labels:topC.map(x=>x[0]),datasets:[{data:topC.map(x=>x[1]),backgroundColor:"#5b5cf0",borderRadius:5}]},{indexAxis:"y",scales:{x:{beginAtZero:true}}});
+ const comp={};for(const o of list)for(const c of o.competences||[])comp[c]=(comp[c]||0)+1;const topC=Object.entries(comp).sort((a,b)=>b[1]-a[1]).slice(0,10);chart("chart-competences","bar",{labels:topC.map(x=>x[0]),datasets:[{data:topC.map(x=>x[1]),backgroundColor:"#5b5cf0",borderRadius:5}]},{indexAxis:"y",scales:{x:{beginAtZero:true}},onClick:(evt,els)=>{if(!els.length)return;const skill=topC[els[0].index]?.[0];if(!skill)return;if(SELECTED_SKILLS.has(skill))SELECTED_SKILLS.delete(skill);else SELECTED_SKILLS.add(skill);renderSkillPicker();syncSkillUI();refresh()}});
  const buckets=[["< 7 j",x=>x!=null&&x<7],["7–30 j",x=>x>=7&&x<30],["1–3 mois",x=>x>=30&&x<90],["> 3 mois",x=>x>=90]];const ages=list.map(o=>ageDays(o.date_publication));chart("chart-fraicheur","bar",{labels:buckets.map(x=>x[0]),datasets:[{data:buckets.map(([,f])=>ages.filter(f).length),backgroundColor:"#21c7a8",borderRadius:6}]},{scales:{y:{beginAtZero:true}}});
  const h=DATA.historique||[];chart("chart-history","line",{labels:h.map(x=>x.date),datasets:[{label:"Offres uniques",data:h.map(x=>x.offres_uniques),borderColor:"#5b5cf0",backgroundColor:"rgba(91,92,240,.12)",fill:true,tension:.25},{label:"Avant déduplication",data:h.map(x=>x.offres_brutes),borderColor:"#9ca3af",tension:.25}]},{plugins:{legend:{display:true,position:"bottom"}},scales:{y:{beginAtZero:true}}});$("#history-note").textContent=h.length>1?fmt(h.length)+" collectes enregistrées":"La tendance apparaîtra après plusieurs collectes";
 }
@@ -36,6 +94,20 @@ function renderRecruiters(list){
  renderRank($("#entreprises"),count(list,o=>o.entreprise!=="Entreprise non précisée"?o.entreprise:""),12);renderRank($("#villes"),count(list,"ville"),12);
  const juniors=count(list.filter(o=>o.debutant),o=>o.entreprise!=="Entreprise non précisée"?o.entreprise:"");renderRank($("#juniors"),juniors,15)
 }
-function refresh(){const list=current();renderJobs(list);renderMarket(list);renderSalaries(list);renderRecruiters(list)}
-async function init(){try{const r=await fetch("data/multisource.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);DATA=await r.json();$("#status-dot").classList.add("ok");$("#maj").textContent="Données du "+(DATA.date||"—");$("#k-offres").textContent=fmt(DATA.stats?.offres_uniques);$("#k-brut").textContent=fmt(DATA.stats?.offres_avant_dedoublonnage)+" annonces avant fusion";$("#k-doublons").textContent=(DATA.stats?.taux_doublons??0)+" %";$("#k-salaires").textContent=fmt(DATA.stats?.avec_salaire);$("#k-salaires-pct").textContent=DATA.stats?.offres_uniques?Math.round(DATA.stats.avec_salaire/DATA.stats.offres_uniques*100)+" % des offres":"—";optionList($("#source"),uniq(DATA.offres.flatMap(o=>o.sources||[o.source_label])));optionList($("#contrat"),uniq(DATA.offres.map(o=>o.contrat)));["q","source","contrat","remote"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",refresh));$("#reset").addEventListener("click",()=>{$("#q").value="";$("#source").value="";$("#contrat").value="";$("#remote").checked=false;refresh()});refresh()}catch(e){$("#maj").textContent="Données indisponibles";$("#liste-offres").innerHTML='<div class="empty">Le fichier multisource n’a pas encore été généré.</div>';console.error(e)}}
+function refresh(){const list=current();renderJobs(list);renderMarket(list);renderSalaries(list);renderRecruiters(list);renderActiveFilters()}
+function closeSkillPanel(){const p=$("#skill-panel");if(!p)return;p.hidden=true;$("#skill-toggle").setAttribute("aria-expanded","false")}
+async function init(){try{
+ const r=await fetch("data/multisource.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);DATA=await r.json();
+ $("#status-dot").classList.add("ok");$("#maj").textContent="Données du "+(DATA.date||"—");$("#k-offres").textContent=fmt(DATA.stats?.offres_uniques);$("#k-brut").textContent=fmt(DATA.stats?.offres_avant_dedoublonnage)+" annonces avant fusion";$("#k-doublons").textContent=(DATA.stats?.taux_doublons??0)+" %";$("#k-salaires").textContent=fmt(DATA.stats?.avec_salaire);$("#k-salaires-pct").textContent=DATA.stats?.offres_uniques?Math.round(DATA.stats.avec_salaire/DATA.stats.offres_uniques*100)+" % des offres":"—";
+ optionList($("#source"),uniq(DATA.offres.flatMap(o=>o.sources||[o.source_label])));optionList($("#contrat"),uniq(DATA.offres.map(o=>o.contrat)));
+ renderSkillPicker();syncSkillUI();
+ ["q","source","contrat","remote","sort"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",()=>{syncSkillUI();refresh()}));
+ $("#skill-search").addEventListener("input",renderSkillPicker);
+ $("#skill-toggle").addEventListener("click",()=>{const p=$("#skill-panel"),open=p.hidden;p.hidden=!open;$("#skill-toggle").setAttribute("aria-expanded",String(open));if(open)setTimeout(()=>$("#skill-search").focus(),0)});
+ $("#skill-clear").addEventListener("click",()=>{SELECTED_SKILLS.clear();renderSkillPicker();syncSkillUI();refresh()});
+ document.addEventListener("click",e=>{if(!e.target.closest(".skill-picker"))closeSkillPanel()});
+ document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSkillPanel()});
+ $("#reset").addEventListener("click",()=>{$("#q").value="";$("#source").value="";$("#contrat").value="";$("#sort").value="recent";$("#remote").checked=false;SELECTED_SKILLS.clear();renderSkillPicker();syncSkillUI();refresh()});
+ refresh()
+}catch(e){$("#maj").textContent="Données indisponibles";$("#liste-offres").innerHTML='<div class="empty">Le fichier multisource n’a pas encore été généré.</div>';console.error(e)}}
 init();
