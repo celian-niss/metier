@@ -1,46 +1,41 @@
-let DATA={offres:[],stats:{}};let chart;
+let DATA={offres:[],stats:{},historique:[]};const charts={};
 const $=s=>document.querySelector(s);const fmt=n=>new Intl.NumberFormat("fr-FR").format(n||0);
+const euro=n=>n==null?"—":new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0}).format(n);
 function uniq(a){return [...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"fr"))}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]))}
 function optionList(el,values){for(const v of values){const o=document.createElement("option");o.value=v;o.textContent=v;el.appendChild(o)}}
+function median(a){const v=a.filter(Number.isFinite).sort((x,y)=>x-y);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2}
+function quantile(a,q){const v=a.filter(Number.isFinite).sort((x,y)=>x-y);if(!v.length)return null;const p=(v.length-1)*q,b=Math.floor(p),r=p-b;return v[b+1]!==undefined?v[b]+r*(v[b+1]-v[b]):v[b]}
+function ageDays(d){if(!d)return null;const x=new Date(d+"T00:00:00"),now=new Date();return Math.floor((now-x)/86400000)}
+function chart(id,type,data,options={}){if(charts[id])charts[id].destroy();charts[id]=new Chart($("#"+id),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},...(options.plugins||{})},scales:options.scales||{},indexAxis:options.indexAxis}})}
 function current(){
  const q=$("#q").value.trim().toLowerCase(),src=$("#source").value,ct=$("#contrat").value,remote=$("#remote").checked;
- return DATA.offres.filter(o=>{
-   const hay=[o.titre,o.entreprise,o.ville,o.description,...(o.competences||[])].join(" ").toLowerCase();
-   return (!q||hay.includes(q))&&(!src||(o.sources||[]).includes(src))&&(!ct||o.contrat===ct)&&(!remote||o.teletravail);
- });
+ return DATA.offres.filter(o=>{const hay=[o.titre,o.entreprise,o.ville,o.description,...(o.competences||[])].join(" ").toLowerCase();return(!q||hay.includes(q))&&(!src||(o.sources||[o.source_label]).includes(src))&&(!ct||o.contrat===ct)&&(!remote||o.teletravail)})
 }
+function count(list,key){const m={};for(const o of list){const v=typeof key==="function"?key(o):o[key];if(v)m[v]=(m[v]||0)+1}return Object.entries(m).sort((a,b)=>b[1]-a[1])}
+function renderRank(el,entries,limit=10){el.innerHTML=entries.slice(0,limit).map(([k,v])=>'<div class="rank-row"><span>'+esc(k)+'</span><b>'+fmt(v)+'</b></div>').join("")||'<span class="job-meta">Pas assez de données.</span>'}
 function renderJobs(list){
- $("#nb-resultats").textContent=fmt(list.length)+" résultat"+(list.length>1?"s":"");
- $("#k-filtres").textContent=fmt(list.length);
- $("#offres").innerHTML=list.length?list.slice(0,120).map(o=>{
-  const sources=(o.sources||[o.source_label]).map(s=>'<span class="badge source">'+esc(s)+'</span>').join("");
-  const skills=(o.competences||[]).slice(0,5).map(s=>'<span class="badge skill">'+esc(s)+'</span>').join("");
-  const url=(o.source_ids||[]).find(x=>x.url)?.url||o.url||"";
-  return '<article class="job"><div class="job-top"><div><h3>'+esc(o.titre||"Sans intitulé")+'</h3><div class="job-meta">'+esc(o.entreprise)+' · '+esc(o.ville||"Localisation non précisée")+' · '+esc(o.contrat)+'</div></div>'+(url?'<a class="external" href="'+esc(url)+'" target="_blank" rel="noopener">Voir l’offre ↗</a>':"")+'</div><div class="badges">'+sources+skills+(o.teletravail?'<span class="badge">Télétravail</span>':"")+'</div></article>'
- }).join(""):'<div class="empty">Aucune offre ne correspond à ces filtres.</div>';
+ $("#nb-resultats").textContent=fmt(list.length)+" résultat"+(list.length>1?"s":"");$("#k-filtres").textContent=fmt(list.length);
+ $("#liste-offres").innerHTML=list.length?list.slice(0,150).map(o=>{const sources=(o.sources||[o.source_label]).map(s=>'<span class="badge source">'+esc(s)+'</span>').join("");const skills=(o.competences||[]).slice(0,5).map(s=>'<span class="badge skill">'+esc(s)+'</span>').join("");const url=(o.source_ids||[]).find(x=>x.url)?.url||o.url||"";const sal=o.salaire_min!=null?'<span class="badge salary">'+euro(o.salaire_min)+(o.salaire_max&&o.salaire_max!==o.salaire_min?"–"+euro(o.salaire_max):"")+"/an</span>':"";return '<article class="job"><div class="job-top"><div><h3>'+esc(o.titre||"Sans intitulé")+'</h3><div class="job-meta">'+esc(o.entreprise)+' · '+esc(o.ville||"Localisation non précisée")+' · '+esc(o.contrat)+' · '+esc(o.date_publication||"date inconnue")+'</div></div>'+(url?'<a class="external" href="'+esc(url)+'" target="_blank" rel="noopener">Voir l’offre ↗</a>':"")+'</div><div class="badges">'+sources+sal+skills+(o.teletravail?'<span class="badge">Télétravail</span>':"")+(o.debutant?'<span class="badge">Débutant</span>':"")+'</div></article>'}).join(""):'<div class="empty">Aucune offre ne correspond à ces filtres.</div>'
 }
-function renderInsights(list){
- const comp={};const villes={};
- for(const o of list){for(const c of o.competences||[])comp[c]=(comp[c]||0)+1;if(o.ville)villes[o.ville]=(villes[o.ville]||0)+1}
- const topC=Object.entries(comp).sort((a,b)=>b[1]-a[1]).slice(0,10);
- if(chart)chart.destroy();
- chart=new Chart($("#chart-competences"),{type:"bar",data:{labels:topC.map(x=>x[0]),datasets:[{data:topC.map(x=>x[1]),borderWidth:0,backgroundColor:"#5b5cf0",borderRadius:5}]},options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:"#eef0f2"},ticks:{precision:0}},y:{grid:{display:false}}}}});
- const topV=Object.entries(villes).sort((a,b)=>b[1]-a[1]).slice(0,10);
- $("#villes").innerHTML=topV.map(([v,n])=>'<div class="rank-row"><span>'+esc(v)+'</span><b>'+fmt(n)+'</b></div>').join("")||'<span class="job-meta">Pas assez de données.</span>';
+function renderMarket(list){
+ const src=count(list,o=>(o.sources||[o.source_label]).join(" + "));chart("chart-sources","doughnut",{labels:src.map(x=>x[0]),datasets:[{data:src.map(x=>x[1]),backgroundColor:["#5b5cf0","#21c7a8","#f59e0b","#ef4444"]}]},{plugins:{legend:{display:true,position:"bottom"}}});
+ const ct=count(list,"contrat");chart("chart-contrats","bar",{labels:ct.map(x=>x[0]),datasets:[{data:ct.map(x=>x[1]),backgroundColor:"#111827",borderRadius:6}]},{scales:{y:{beginAtZero:true}}});
+ const comp={};for(const o of list)for(const c of o.competences||[])comp[c]=(comp[c]||0)+1;const topC=Object.entries(comp).sort((a,b)=>b[1]-a[1]).slice(0,10);chart("chart-competences","bar",{labels:topC.map(x=>x[0]),datasets:[{data:topC.map(x=>x[1]),backgroundColor:"#5b5cf0",borderRadius:5}]},{indexAxis:"y",scales:{x:{beginAtZero:true}}});
+ const buckets=[["< 7 j",x=>x!=null&&x<7],["7–30 j",x=>x>=7&&x<30],["1–3 mois",x=>x>=30&&x<90],["> 3 mois",x=>x>=90]];const ages=list.map(o=>ageDays(o.date_publication));chart("chart-fraicheur","bar",{labels:buckets.map(x=>x[0]),datasets:[{data:buckets.map(([,f])=>ages.filter(f).length),backgroundColor:"#21c7a8",borderRadius:6}]},{scales:{y:{beginAtZero:true}}});
+ const h=DATA.historique||[];chart("chart-history","line",{labels:h.map(x=>x.date),datasets:[{label:"Offres uniques",data:h.map(x=>x.offres_uniques),borderColor:"#5b5cf0",backgroundColor:"rgba(91,92,240,.12)",fill:true,tension:.25},{label:"Avant déduplication",data:h.map(x=>x.offres_brutes),borderColor:"#9ca3af",tension:.25}]},{plugins:{legend:{display:true,position:"bottom"}},scales:{y:{beginAtZero:true}}});$("#history-note").textContent=h.length>1?fmt(h.length)+" collectes enregistrées":"La tendance apparaîtra après plusieurs collectes";
 }
-function refresh(){const list=current();renderJobs(list);renderInsights(list)}
-async function init(){
- try{
-  const r=await fetch("data/multisource.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);DATA=await r.json();
-  $("#status-dot").classList.add("ok");$("#maj").textContent="Données du "+(DATA.date||"—");
-  $("#k-offres").textContent=fmt(DATA.stats?.offres_uniques);$("#k-brut").textContent=fmt(DATA.stats?.offres_avant_dedoublonnage)+" annonces avant fusion";
-  $("#k-doublons").textContent=fmt(DATA.stats?.doublons_fusionnes);$("#k-sources").textContent=fmt(DATA.stats?.sources_actives?.length);
-  $("#k-source-names").textContent=(DATA.stats?.sources_actives||[]).map(x=>x.replace("_"," ")).join(" · ")||"—";
-  optionList($("#source"),uniq(DATA.offres.flatMap(o=>o.sources||[o.source_label])));optionList($("#contrat"),uniq(DATA.offres.map(o=>o.contrat)));
-  ["q","source","contrat","remote"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",refresh));
-  $("#reset").addEventListener("click",()=>{$("#q").value="";$("#source").value="";$("#contrat").value="";$("#remote").checked=false;refresh()});
-  refresh();
- }catch(e){$("#maj").textContent="Données indisponibles";$("#offres").innerHTML='<div class="empty">Le fichier multisource n’a pas encore été généré. Lancez le workflow de collecte.</div>';console.error(e)}
+function renderSalaries(list){
+ const sal=list.filter(o=>Number.isFinite(o.salaire_min));const mids=sal.map(o=>((o.salaire_min||0)+(o.salaire_max||o.salaire_min||0))/2).filter(Number.isFinite);const med=median(mids),q1=quantile(mids,.25),q3=quantile(mids,.75);
+ $("#salary-summary").textContent=sal.length?fmt(sal.length)+" offres de la sélection affichent un salaire exploitable.": "Aucune offre filtrée n'affiche de salaire exploitable.";
+ $("#salary-kpis").innerHTML=[["Offres avec salaire",fmt(sal.length)],["Médiane",euro(med)],["50 % central",q1!=null&&q3!=null?euro(q1)+" – "+euro(q3):"—"]].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join("");
+ const byCt={};for(const o of sal){(byCt[o.contrat]??=[]).push(((o.salaire_min||0)+(o.salaire_max||o.salaire_min||0))/2)}const rows=Object.entries(byCt).map(([k,v])=>[k,median(v),v.length]).filter(x=>x[2]>=2).sort((a,b)=>a[1]-b[1]);chart("chart-salaires","bar",{labels:rows.map(x=>x[0]),datasets:[{data:rows.map(x=>x[1]),backgroundColor:"#111827",borderRadius:6}]},{scales:{y:{beginAtZero:true,ticks:{callback:v=>(v/1000)+" k€"}}}});
+ const bySource={};for(const o of sal)for(const s of o.sources||[o.source_label]){(bySource[s]??=[]).push(((o.salaire_min||0)+(o.salaire_max||o.salaire_min||0))/2)}renderRank($("#salary-source"),Object.entries(bySource).map(([k,v])=>[k,euro(median(v))+" · "+v.length+" offres"]),10);
 }
+function renderRecruiters(list){
+ renderRank($("#entreprises"),count(list,o=>o.entreprise!=="Entreprise non précisée"?o.entreprise:""),12);renderRank($("#villes"),count(list,"ville"),12);
+ const juniors=count(list.filter(o=>o.debutant),o=>o.entreprise!=="Entreprise non précisée"?o.entreprise:"");renderRank($("#juniors"),juniors,15)
+}
+function refresh(){const list=current();renderJobs(list);renderMarket(list);renderSalaries(list);renderRecruiters(list)}
+async function init(){try{const r=await fetch("data/multisource.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);DATA=await r.json();$("#status-dot").classList.add("ok");$("#maj").textContent="Données du "+(DATA.date||"—");$("#k-offres").textContent=fmt(DATA.stats?.offres_uniques);$("#k-brut").textContent=fmt(DATA.stats?.offres_avant_dedoublonnage)+" annonces avant fusion";$("#k-doublons").textContent=(DATA.stats?.taux_doublons??0)+" %";$("#k-salaires").textContent=fmt(DATA.stats?.avec_salaire);$("#k-salaires-pct").textContent=DATA.stats?.offres_uniques?Math.round(DATA.stats.avec_salaire/DATA.stats.offres_uniques*100)+" % des offres":"—";optionList($("#source"),uniq(DATA.offres.flatMap(o=>o.sources||[o.source_label])));optionList($("#contrat"),uniq(DATA.offres.map(o=>o.contrat)));["q","source","contrat","remote"].forEach(id=>$("#"+id).addEventListener(id==="q"?"input":"change",refresh));$("#reset").addEventListener("click",()=>{$("#q").value="";$("#source").value="";$("#contrat").value="";$("#remote").checked=false;refresh()});refresh()}catch(e){$("#maj").textContent="Données indisponibles";$("#liste-offres").innerHTML='<div class="empty">Le fichier multisource n’a pas encore été généré.</div>';console.error(e)}}
 init();
