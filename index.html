@@ -29,12 +29,35 @@
       </div>
     </section>
 
-    <section class="filters">
-      <label class="search"><span>⌕</span><input id="q" type="search" placeholder="Métier, entreprise, compétence, ville…"></label>
-      <select id="source"><option value="">Toutes les sources</option></select>
-      <select id="contrat"><option value="">Tous les contrats</option></select>
-      <label class="check"><input id="remote" type="checkbox"> Télétravail mentionné</label>
-      <button id="reset" type="button">Réinitialiser</button>
+    <section class="filter-shell" aria-label="Filtres des offres">
+      <div class="filters">
+        <label class="search" for="q"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Rechercher un métier, une entreprise ou une ville…"></label>
+        <div class="skill-picker">
+          <button id="skill-toggle" class="filter-button" type="button" aria-expanded="false" aria-controls="skill-panel">
+            <span>Compétences</span><b id="skill-count">0</b><span class="chevron">⌄</span>
+          </button>
+          <div id="skill-panel" class="skill-panel" hidden>
+            <div class="skill-panel-head">
+              <strong>Choisir des compétences</strong>
+              <button id="skill-clear" type="button">Tout effacer</button>
+            </div>
+            <label class="skill-search"><span>⌕</span><input id="skill-search" type="search" placeholder="SEO, CRM, GA4…"></label>
+            <div id="skill-options" class="skill-options"></div>
+            <p class="skill-help">Une offre est gardée si elle contient au moins une compétence sélectionnée.</p>
+          </div>
+        </div>
+        <select id="source" aria-label="Source"><option value="">Toutes les sources</option></select>
+        <select id="contrat" aria-label="Type de contrat"><option value="">Tous les contrats</option></select>
+        <select id="sort" aria-label="Trier les offres">
+          <option value="recent">Plus récentes</option>
+          <option value="salary">Salaire le plus élevé</option>
+          <option value="skills">Plus de compétences</option>
+        </select>
+        <label class="check"><input id="remote" type="checkbox"> Télétravail</label>
+        <button id="reset" class="reset-button" type="button">Réinitialiser</button>
+      </div>
+      <div id="quick-skills" class="quick-skills" aria-label="Compétences fréquentes"></div>
+      <div id="active-filters" class="active-filters" aria-live="polite"></div>
     </section>
 
     <section class="kpis">
@@ -58,7 +81,7 @@
         <div class="chart-wide"><canvas id="chart-history"></canvas></div>
       </article>
       <article class="panel">
-        <div class="panel-head"><div><p class="eyebrow">Compétences</p><h2>Les plus citées</h2></div></div>
+        <div class="panel-head"><div><p class="eyebrow">Compétences</p><h2>Les plus citées</h2></div><span>Cliquez sur une barre pour filtrer</span></div>
         <div class="chart-wrap"><canvas id="chart-competences"></canvas></div>
       </article>
       <article class="panel">
