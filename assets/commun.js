@@ -235,37 +235,45 @@ const PAGES = [
 const PAGE_ICI = (location.pathname.split("/").pop() || "index.html");
 
 const HTML_FILTRES = `
-  <div class="filtres">
-    <div>
-      <h3>Les métiers</h3>
-      <label class="recherche-filtre"><input id="recherche-metier" type="search" placeholder="Rechercher un métier…"></label>
-      <div class="metiers" id="metiers"></div>
-      <div class="boutons">
-        <button data-groupe="tous">Tout cocher</button>
-        <button data-groupe="aucun">Tout décocher</button>
-        <span class="groupes" id="groupes"></span>
-      </div>
+  <div class="filtres-rapides">
+    <div class="filtre-rapide">
+      <div class="filtre-titre"><span class="etape">1</span><div><h3>Famille de métiers</h3><p>Commencez large, puis affinez si besoin.</p></div></div>
+      <div class="groupes groupes-principaux" id="groupes"></div>
+      <button type="button" class="lien-filtre" id="ouvrir-metiers">Choisir les métiers un par un</button>
     </div>
-    <div>
-      <h3>Type de contrat</h3>
-      <div class="cases" id="f-contrats"></div>
-    </div>
-    <div>
-      <h3>Niveau de poste</h3>
-      <div class="cases" id="f-niveaux"></div>
-      <p class="note" style="margin:8px 0 0">Déduit de l'intitulé de l'annonce. Ces couleurs servent de repère dans toute la page.</p>
-    </div>
-    <div class="filtre-competences">
-      <h3>Compétences <small>— optionnel</small></h3>
-      <label class="recherche-filtre"><input id="recherche-competence" type="search" placeholder="SEO, CRM, GA4…"></label>
-      <div class="cases cases-competences" id="f-competences"></div>
-      <div class="boutons">
-        <button type="button" id="competences-vider">Effacer la sélection</button>
-      </div>
-      <p class="note" style="margin:8px 0 0">Si plusieurs compétences sont cochées, une offre est gardée dès qu'elle en contient au moins une.</p>
+    <div class="filtre-rapide">
+      <div class="filtre-titre"><span class="etape">2</span><div><h3>Type de contrat</h3><p>Gardez uniquement les contrats qui vous intéressent.</p></div></div>
+      <div class="cases cases-inline" id="f-contrats"></div>
     </div>
   </div>
-  <p class="compte" id="compte"></p>`;
+
+  <details class="filtres-avances" id="filtres-avances">
+    <summary><span><b>Affiner la sélection</b><small>Métier précis, niveau de poste, compétences</small></span><span class="resume-avance" id="resume-avance"></span></summary>
+    <div class="filtres">
+      <div class="filtre-metiers-detail">
+        <h3>Métiers précis</h3>
+        <label class="recherche-filtre"><input id="recherche-metier" type="search" placeholder="Rechercher un métier…"></label>
+        <div class="metiers" id="metiers"></div>
+        <div class="boutons">
+          <button data-groupe="tous" type="button">Tout cocher</button>
+          <button data-groupe="aucun" type="button">Tout décocher</button>
+        </div>
+      </div>
+      <div>
+        <h3>Niveau de poste</h3>
+        <div class="cases" id="f-niveaux"></div>
+      </div>
+      <div class="filtre-competences">
+        <h3>Compétences <small>— optionnel</small></h3>
+        <label class="recherche-filtre"><input id="recherche-competence" type="search" placeholder="SEO, CRM, GA4…"></label>
+        <div class="cases cases-competences" id="f-competences"></div>
+        <div class="boutons">
+          <button type="button" id="competences-vider">Effacer les compétences</button>
+        </div>
+      </div>
+    </div>
+  </details>
+  <div class="barre-resultat"><p class="compte" id="compte"></p><button type="button" class="reset-filtres" id="reset-filtres">Réinitialiser</button></div>`;
 
 function poserNavEtFiltres() {
   const n = document.getElementById("nav-ici");
@@ -281,11 +289,9 @@ function poserNavEtFiltres() {
 
   const f = document.getElementById("filtres-ici");
   if (f) f.outerHTML = (PAGE_ICI === "index.html"
-    // Accueil : le panneau est déplié, c'est le point de départ.
-    ? `<div class="carte">${HTML_FILTRES}</div>`
-    // Ailleurs : replié, on vient lire une page, pas refaire ses filtres.
-    : `<details class="carte"><summary id="resume-filtres">Filtres</summary>${HTML_FILTRES}</details>`)
-    + `<div class="vide" id="aucune" hidden>Aucune offre ne correspond à ces filtres. Recochez un métier, un type de contrat ou un niveau de poste.</div>`;
+    ? `<section class="carte panneau-filtres"><div class="panneau-filtres-head"><div><span class="sur-titre">Personnaliser</span><h2>Qu'est-ce que vous cherchez ?</h2></div><span class="aide-filtre">2 étapes suffisent pour commencer</span></div>${HTML_FILTRES}</section>`
+    : `<details class="carte panneau-filtres"><summary id="resume-filtres">Modifier les filtres</summary>${HTML_FILTRES}</details>`)
+    + `<div class="vide" id="aucune" hidden>Aucune offre ne correspond à ces filtres. Modifiez votre sélection.</div>`;
 
   const p = document.getElementById("pied");
   if (p) p.innerHTML =
@@ -319,7 +325,13 @@ const Commun = {
     document.getElementById("compte").innerHTML = `<b>${n}</b> offre${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""} sur ${total} — ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} coché${f.metiers.size > 1 ? "s" : ""}${f.competences.size ? ` · ${f.competences.size} compétence${f.competences.size > 1 ? "s" : ""}` : ""}.`;
     document.getElementById("aucune").hidden = n > 0;
     const resume = document.getElementById("resume-filtres");
-    if (resume) resume.textContent = `Filtres (${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""}, ${n} offre${n > 1 ? "s" : ""})`;
+    if (resume) resume.textContent = `Modifier les filtres · ${n} offre${n > 1 ? "s" : ""}`;
+    const resumeAvance = document.getElementById("resume-avance");
+    if (resumeAvance) {
+      const niveauxTous = f.niveaux.size === NIVEAUX.length;
+      const extra = (niveauxTous ? 0 : 1) + (f.competences.size ? 1 : 0);
+      resumeAvance.textContent = extra ? `${extra} filtre${extra > 1 ? "s" : ""} avancé${extra > 1 ? "s" : ""} actif${extra > 1 ? "s" : ""}` : "Optionnel";
+    }
     // Plus rien de sélectionné : le message dit « recochez un métier », le panneau replié
     // doit donc s'ouvrir. Sinon la page réclame une action dont elle cache les cases.
     if (n === 0) { const d = document.querySelector("details.carte"); if (d) d.open = true; }
@@ -372,11 +384,18 @@ const Commun = {
         majGroupes(); Commun.rafraichir();
       }));
       document.getElementById("metiers").addEventListener("change", () => { majGroupes(); Commun.rafraichir(); });
-      document.querySelectorAll(".boutons button").forEach(b => b.addEventListener("click", () => {
+      document.querySelectorAll('.boutons button[data-groupe]').forEach(b => b.addEventListener("click", () => {
         document.querySelectorAll("#metiers input").forEach(i => { i.checked = b.dataset.groupe === "tous"; });
         majGroupes(); Commun.rafraichir();
       }));
       majGroupes();
+
+      const filtresAvances = document.getElementById("filtres-avances");
+      const ouvrirMetiers = document.getElementById("ouvrir-metiers");
+      if (ouvrirMetiers) ouvrirMetiers.addEventListener("click", () => {
+        filtresAvances.open = true;
+        setTimeout(() => document.getElementById("recherche-metier")?.focus(), 0);
+      });
 
       // Recherche instantanée dans les métiers : masque seulement l'affichage, pas la sélection.
       const rechercheMetier = document.getElementById("recherche-metier");
@@ -417,6 +436,20 @@ const Commun = {
         `<label><input type="checkbox" value="${k}" ${memoN.includes(k) ? "checked" : ""}> <i class="pastille" style="background:${COUL_NIV[k]}"></i> ${l} <small id="nb-n-${k}"></small></label>`).join("");
       document.getElementById("f-contrats").addEventListener("change", Commun.rafraichir);
       document.getElementById("f-niveaux").addEventListener("change", Commun.rafraichir);
+
+      const reset = document.getElementById("reset-filtres");
+      if (reset) reset.addEventListener("click", () => {
+        document.querySelectorAll("#metiers input").forEach(i => {
+          const m = d.metiers.find(x => x.code === i.value);
+          i.checked = !!(m && m.coche);
+        });
+        document.querySelectorAll("#f-contrats input,#f-niveaux input").forEach(i => { i.checked = true; });
+        document.querySelectorAll("#f-competences input").forEach(i => { i.checked = false; });
+        if (rechercheMetier) rechercheMetier.value = "";
+        if (rechercheCompetence) rechercheCompetence.value = "";
+        majGroupes();
+        Commun.rafraichir();
+      });
 
       if (initier) initier(d);
       Commun.rafraichir();
