@@ -269,8 +269,15 @@ const HTML_FILTRES = `
 
 function poserNavEtFiltres() {
   const n = document.getElementById("nav-ici");
-  if (n) n.outerHTML = `<nav class="nav">` + PAGES.map(([url, lib]) =>
-    `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>`;
+  if (n) n.outerHTML = `
+    <header class="topbar">
+      <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
+        <span class="pulse-mark">P</span>
+        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Marketing & Digital</small></span>
+      </a>
+      <nav class="nav">` + PAGES.map(([url, lib]) =>
+        `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>
+    </header>`;
 
   const f = document.getElementById("filtres-ici");
   if (f) f.outerHTML = (PAGE_ICI === "index.html"

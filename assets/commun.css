@@ -203,3 +203,146 @@ details.carte>summary{padding:2px 0}
   .chiffres{grid-template-columns:1fr 1fr}
   .chiffre b{font-size:1.55rem}
 }
+
+
+/* ===== Pulse Emploi V5 — identité visuelle premium ===== */
+:root{
+  --encre:#111827;
+  --gris:#6b7280;
+  --fond:#f6f7fb;
+  --carte:#ffffff;
+  --accent:#5b5cf0;
+  --accent-2:#21c7a8;
+  --accent-doux:#eef0ff;
+  --trait:#e7e9f1;
+  --ombre:0 12px 32px rgba(17,24,39,.07);
+  --ombre-hover:0 18px 42px rgba(17,24,39,.11);
+  --rayon:18px;
+}
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(circle at top left, rgba(91,92,240,.08), transparent 28%),
+    linear-gradient(180deg,#fafbff 0,#f6f7fb 320px);
+  color:var(--encre);
+}
+main{max-width:1240px;padding:0 24px 80px}
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  min-height:72px;margin:0 -24px 34px;padding:0 max(24px,calc((100vw - 1240px)/2));
+  background:rgba(255,255,255,.88);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(231,233,241,.9)
+}
+.pulse-brand{display:flex;align-items:center;gap:10px;color:var(--encre);text-decoration:none}
+.pulse-brand:hover{text-decoration:none}
+.pulse-mark{
+  display:grid;place-items:center;width:36px;height:36px;border-radius:11px;
+  background:var(--encre);color:#fff;font-weight:800;box-shadow:0 6px 16px rgba(17,24,39,.12)
+}
+.pulse-brand-text{display:flex;flex-direction:column;line-height:1.05}
+.pulse-brand-text b{font-size:.96rem}
+.pulse-brand-text small{margin-top:3px;color:var(--gris);font-size:.68rem;font-weight:600}
+.nav{position:static;margin:0;padding:0;border:0;background:transparent;backdrop-filter:none;display:flex;gap:6px;flex-wrap:wrap}
+.nav a{padding:8px 11px;border-radius:10px;font-size:.85rem;color:var(--gris);border:1px solid transparent}
+.nav a:hover{background:#f6f7fb;color:var(--encre);text-decoration:none;box-shadow:none}
+.nav a.ici{background:var(--accent-doux);border-color:#dfe2ff;color:var(--accent);font-weight:750;box-shadow:none}
+h1{
+  max-width:900px;margin-bottom:8px;
+  font-size:clamp(2.35rem,5.2vw,4.4rem);line-height:.98;
+  letter-spacing:-.055em;font-weight:800
+}
+h1 small{display:block;margin-top:10px;font-size:.34em;line-height:1.35;letter-spacing:-.015em}
+.sous{max-width:900px;margin-bottom:26px;font-size:.98rem;line-height:1.6}
+h2{margin-top:46px;font-size:1.35rem;letter-spacing:-.025em}
+.carte,.chiffre,.phrase,.item,a.lien,.lecture{
+  border:1px solid var(--trait);border-radius:var(--rayon);
+  background:rgba(255,255,255,.98);box-shadow:var(--ombre)
+}
+.carte{padding:22px}
+.carte h3{font-size:1.02rem;letter-spacing:-.015em}
+.chiffres{gap:14px}
+.chiffre{padding:20px}
+.chiffre b{font-size:2.05rem;color:var(--accent);letter-spacing:-.045em}
+.chiffre span{font-size:.82rem;line-height:1.45}
+.grille{gap:18px}
+.phrase{padding:20px 22px;border-left:0;background:linear-gradient(135deg,#fff 0,#f7f7ff 100%)}
+.phrase b{color:var(--accent)}
+.filtres{
+  gap:18px;padding:2px;
+  grid-template-columns:1.55fr .9fr .9fr
+}
+.filtres h3{font-size:.72rem;letter-spacing:.1em}
+.recherche-filtre input{
+  min-height:42px;border-radius:11px;border-color:#e4e6ef;background:#f7f8fb;padding:10px 12px
+}
+.recherche-filtre input:focus{background:#fff;border-color:var(--accent);box-shadow:0 0 0 4px rgba(91,92,240,.1)}
+.metiers{gap:5px 20px}
+.metiers h4{margin-top:12px;font-size:.75rem}
+.metiers label,.cases label{padding:6px 7px;border-radius:9px;font-size:.9rem}
+.metiers label:hover,.cases label:hover{background:#f7f8fc}
+input[type="checkbox"]{accent-color:var(--accent)}
+.boutons button,.carte-outils button{
+  border-radius:9px;border-color:#e2e4ed;background:#fff;padding:6px 10px;
+  font-size:.8rem;font-weight:650
+}
+.boutons button:hover,.carte-outils button:hover,.carte-outils button.actif{
+  color:var(--accent);border-color:#cfd2ff;background:var(--accent-doux)
+}
+.compte{
+  margin-top:14px;padding:11px 13px;border-radius:11px;
+  background:#f7f8fb;border:1px solid #eceef4;font-size:.88rem
+}
+.lecture{
+  padding:22px;background:linear-gradient(135deg,#fff 0,#f6f7ff 100%);
+  border-color:#e2e4f5
+}
+.lecture h2{margin:2px 0 16px;font-size:1.15rem}
+.sur-titre{color:var(--accent);font-size:.68rem}
+.lecture-grille{gap:10px}
+.lecture-item{
+  background:#fff;border:1px solid #eceef5;border-radius:12px;padding:13px 14px
+}
+.lecture-item span{font-size:.72rem}
+.lecture-item b{font-size:.95rem}
+.liens{gap:14px}
+a.lien{padding:20px}
+a.lien:hover{transform:translateY(-2px);border-color:#d5d8ff}
+a.lien b{font-size:1.02rem}
+a.lien span{font-size:.84rem;line-height:1.5}
+.item{padding:15px 16px}
+.item:hover{transform:translateY(-1px)}
+.item .titre{font-size:.98rem}
+.item .meta{font-size:.82rem}
+.etiq{padding:2px 9px}
+.sal{color:#0f8a68}
+.zone{height:320px}
+.zone.haute{height:500px}
+.zone.geante{height:860px}
+#map{height:610px;border-radius:12px}
+.fiabilite{padding:8px 2px}
+.fiabilite-badge{background:#e9f8f3;color:#087f69}
+details.carte>summary{padding:2px 0;font-size:.92rem}
+footer{margin-top:60px;padding-top:20px;border-color:#e1e4ec;font-size:.8rem}
+@media(max-width:900px){
+  .topbar{align-items:flex-start;flex-direction:column;gap:10px;padding-top:12px;padding-bottom:12px}
+  .nav{width:100%;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav a{white-space:nowrap}
+  .filtres{grid-template-columns:1fr}
+  .filtre-competences{grid-column:auto}
+}
+@media(max-width:600px){
+  main{padding:0 14px 60px}
+  .topbar{margin:0 -14px 24px;padding-left:14px;padding-right:14px}
+  h1{font-size:2.55rem}
+  .carte,.lecture{padding:16px}
+  .chiffres{grid-template-columns:1fr 1fr}
+  .chiffre{padding:16px}
+  .chiffre b{font-size:1.65rem}
+  .lecture-grille{grid-template-columns:1fr}
+  #map{height:440px}
+}
+@media(max-width:400px){
+  .chiffres{grid-template-columns:1fr}
+}
