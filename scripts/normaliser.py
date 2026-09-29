@@ -4,7 +4,6 @@ import hashlib
 import re
 import unicodedata
 from datetime import datetime, timezone
-from urllib.parse import urlparse
 
 from multisource_config import COMPETENCES
 
@@ -47,6 +46,48 @@ def normaliser_contrat(value):
     return texte_simple(value) or "Non précisé"
 
 
+def _nombre(token):
+    token = token.replace("\u202f", "").replace(" ", "").replace(",", ".")
+    try:
+        return float(token)
+    except ValueError:
+        return None
+
+
+def normaliser_salaire_france_travail(libelle):
+    """Convertit le libellé France Travail en fourchette annuelle brute approximative."""
+    txt = texte_simple(libelle)
+    if not txt:
+        return None, None
+    nums = [_nombre(x) for x in re.findall(r"\d[\d\s\u202f]*(?:[,.]\d+)?", txt)]
+    nums = [x for x in nums if x is not None]
+    if not nums:
+        return None, None
+
+    # Écarte les nombres descriptifs fréquents qui ne sont pas un salaire.
+    values = [x for x in nums if x >= 8]
+    if not values:
+        return None, None
+    lo = values[0]
+    hi = values[1] if len(values) > 1 else lo
+    if hi < lo:
+        lo, hi = hi, lo
+
+    t = cle_texte(txt)
+    if "horaire" in t or "heure" in t:
+        factor = 35 * 52
+    elif "mensuel" in t or "mois" in t:
+        factor = 12
+    elif "annuel" in t or "an" in t:
+        factor = 1
+    else:
+        # Heuristique : les montants < 100 sont généralement horaires,
+        # ceux < 10 000 sont généralement mensuels.
+        factor = 35 * 52 if hi < 100 else (12 if hi < 10000 else 1)
+
+    return round(lo * factor), round(hi * factor)
+
+
 def normaliser_france_travail(enveloppe):
     o = enveloppe["payload"]
     lieu = o.get("lieuTravail") or {}
@@ -57,9 +98,10 @@ def normaliser_france_travail(enveloppe):
     titre = texte_simple(o.get("intitule"))
     contrat = normaliser_contrat(o.get("typeContratLibelle") or o.get("natureContrat"))
     salaire_txt = texte_simple(salaire.get("libelle"))
-    url = texte_simple(origine.get("urlOrigine") or o.get("contact", {}).get("urlPostulation"))
-    lat = lieu.get("latitude")
-    lon = lieu.get("longitude")
+    salaire_min, salaire_max = normaliser_salaire_france_travail(salaire_txt)
+    url = texte_simple(origine.get("urlOrigine") or (o.get("contact") or {}).get("urlPostulation"))
+    exp = texte_simple(o.get("experienceLibelle"))
+    debutant = "debutant accepte" in cle_texte(exp) or contrat == "Alternance"
     return {
         "id": id_interne("france_travail", o.get("id")),
         "source": "france_travail",
@@ -71,19 +113,21 @@ def normaliser_france_travail(enveloppe):
         "description": description,
         "ville": texte_simple(lieu.get("libelle")),
         "code_postal": texte_simple(lieu.get("commune")),
-        "latitude": lat,
-        "longitude": lon,
+        "latitude": lieu.get("latitude"),
+        "longitude": lieu.get("longitude"),
         "contrat": contrat,
-        "experience": texte_simple(o.get("experienceLibelle")),
-        "teletravail": "télétravail" in cle_texte(description) or "teletravail" in cle_texte(description),
+        "experience": exp,
+        "debutant": debutant,
+        "teletravail": "teletravail" in cle_texte(f"{titre} {description}"),
         "salaire_texte": salaire_txt,
-        "salaire_min": None,
-        "salaire_max": None,
+        "salaire_min": salaire_min,
+        "salaire_max": salaire_max,
         "date_publication": (o.get("dateCreation") or "")[:10],
         "date_actualisation": (o.get("dateActualisation") or "")[:10],
         "url": url,
         "competences": detecter_competences(f"{titre} {description}"),
         "rome": texte_simple(o.get("romeCode")),
+        "secteur": texte_simple(o.get("secteurActiviteLibelle")),
     }
 
 
@@ -96,6 +140,16 @@ def normaliser_adzuna(enveloppe):
     titre = texte_simple(o.get("title"))
     contrat = normaliser_contrat(o.get("contract_type") or o.get("contract_time"))
     created = texte_simple(o.get("created"))
+    sal_min = o.get("salary_min")
+    sal_max = o.get("salary_max")
+    try:
+        sal_min = round(float(sal_min)) if sal_min is not None else None
+    except (TypeError, ValueError):
+        sal_min = None
+    try:
+        sal_max = round(float(sal_max)) if sal_max is not None else sal_min
+    except (TypeError, ValueError):
+        sal_max = sal_min
     return {
         "id": id_interne("adzuna", o.get("id")),
         "source": "adzuna",
@@ -111,15 +165,17 @@ def normaliser_adzuna(enveloppe):
         "longitude": o.get("longitude"),
         "contrat": contrat,
         "experience": "",
+        "debutant": contrat in {"Alternance", "Stage"},
         "teletravail": any(x in cle_texte(f"{titre} {description}") for x in ["teletravail", "remote", "hybride"]),
         "salaire_texte": "",
-        "salaire_min": o.get("salary_min"),
-        "salaire_max": o.get("salary_max"),
+        "salaire_min": sal_min,
+        "salaire_max": sal_max,
         "date_publication": created[:10],
         "date_actualisation": created[:10],
         "url": texte_simple(o.get("redirect_url")),
         "competences": detecter_competences(f"{titre} {description}"),
         "rome": "",
+        "secteur": texte_simple(category.get("label")),
         "categorie_source": texte_simple(category.get("label")),
     }
 
