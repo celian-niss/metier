@@ -11,6 +11,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="observatoire.html"><span class="brand-mark">P</span><span>Pulse Emploi</span></a>
+    <nav class="mini-nav"><a href="#marche">Marché</a><a href="#salaires">Salaires</a><a href="#recruteurs">Recruteurs</a><a href="#offres">Offres</a></nav>
     <div class="status"><span id="status-dot"></span><span id="maj">Chargement…</span></div>
   </header>
 
@@ -19,12 +20,12 @@
       <div>
         <p class="eyebrow">Observatoire multisource</p>
         <h1>Le marché du marketing et du digital, <em>en données.</em></h1>
-        <p class="intro">France Travail et Adzuna réunis dans une seule lecture : offres, contrats, compétences, territoires et signaux du marché.</p>
+        <p class="intro">France Travail et Adzuna réunis, nettoyés et dédupliqués pour analyser les offres, les compétences, les salaires, les recruteurs et l'évolution du marché.</p>
       </div>
       <div class="hero-card">
         <span class="hero-card-label">Périmètre</span>
         <strong>Marketing · Communication · Digital</strong>
-        <span>France entière</span>
+        <span>France entière · API officielles</span>
       </div>
     </section>
 
@@ -38,35 +39,66 @@
 
     <section class="kpis">
       <article><span>Offres uniques</span><strong id="k-offres">—</strong><small id="k-brut">—</small></article>
-      <article><span>Doublons fusionnés</span><strong id="k-doublons">—</strong><small>entre les sources</small></article>
-      <article><span>Sources actives</span><strong id="k-sources">—</strong><small id="k-source-names">—</small></article>
+      <article><span>Taux de doublons</span><strong id="k-doublons">—</strong><small>fusionnés entre sources</small></article>
+      <article><span>Avec salaire</span><strong id="k-salaires">—</strong><small id="k-salaires-pct">—</small></article>
       <article><span>Résultats filtrés</span><strong id="k-filtres">—</strong><small>selon vos critères</small></article>
     </section>
 
-    <section class="grid">
+    <section id="marche" class="dashboard-grid">
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Sources</p><h2>Couverture du marché</h2></div></div>
+        <div class="chart-wrap"><canvas id="chart-sources"></canvas></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Contrats</p><h2>Répartition des offres</h2></div></div>
+        <div class="chart-wrap"><canvas id="chart-contrats"></canvas></div>
+      </article>
+      <article class="panel panel-wide">
+        <div class="panel-head"><div><p class="eyebrow">Évolution</p><h2>Le marché bouge</h2></div><span id="history-note"></span></div>
+        <div class="chart-wide"><canvas id="chart-history"></canvas></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Compétences</p><h2>Les plus citées</h2></div></div>
+        <div class="chart-wrap"><canvas id="chart-competences"></canvas></div>
+      </article>
+      <article class="panel">
+        <div class="panel-head"><div><p class="eyebrow">Fraîcheur</p><h2>Âge des annonces</h2></div></div>
+        <div class="chart-wrap"><canvas id="chart-fraicheur"></canvas></div>
+      </article>
+    </section>
+
+    <section id="salaires" class="section-block">
+      <div class="section-title"><div><p class="eyebrow">Rémunération</p><h2>Ce que ça paie</h2></div><p id="salary-summary" class="section-copy"></p></div>
+      <div class="dashboard-grid">
+        <article class="panel panel-wide"><div class="panel-head"><h3>Salaires par type de contrat</h3></div><div class="chart-wide"><canvas id="chart-salaires"></canvas></div></article>
+        <article class="panel"><div class="panel-head"><h3>Salaires selon la source</h3></div><div id="salary-source" class="rank"></div></article>
+        <article class="panel"><div class="panel-head"><h3>Indicateurs</h3></div><div id="salary-kpis" class="metric-list"></div></article>
+      </div>
+    </section>
+
+    <section id="recruteurs" class="section-block">
+      <div class="section-title"><div><p class="eyebrow">Employeurs</p><h2>Qui recrute ?</h2></div></div>
+      <div class="dashboard-grid">
+        <article class="panel"><div class="panel-head"><h3>Entreprises les plus présentes</h3></div><div id="entreprises" class="rank"></div></article>
+        <article class="panel"><div class="panel-head"><h3>Villes les plus présentes</h3></div><div id="villes" class="rank"></div></article>
+        <article class="panel panel-wide"><div class="panel-head"><h3>Ouvertures aux profils débutants</h3></div><div id="juniors" class="rank"></div></article>
+      </div>
+    </section>
+
+    <section id="offres" class="section-block">
       <article class="panel panel-wide">
         <div class="panel-head"><div><p class="eyebrow">Offres</p><h2>Explorer le marché</h2></div><span id="nb-resultats"></span></div>
-        <div id="offres" class="jobs"></div>
+        <div id="liste-offres" class="jobs"></div>
       </article>
+    </section>
 
-      <aside class="side">
-        <article class="panel">
-          <div class="panel-head"><div><p class="eyebrow">Compétences</p><h2>Les plus citées</h2></div></div>
-          <div class="chart-wrap"><canvas id="chart-competences"></canvas></div>
-        </article>
-        <article class="panel">
-          <div class="panel-head"><div><p class="eyebrow">Territoires</p><h2>Villes les plus présentes</h2></div></div>
-          <div id="villes" class="rank"></div>
-        </article>
-        <article class="panel">
-          <div class="panel-head"><div><p class="eyebrow">Méthode</p><h2>Pourquoi ces chiffres ?</h2></div></div>
-          <p class="method">Les annonces sont collectées via des API officielles, converties dans un format commun puis dédupliquées lorsqu'une même offre apparaît sur plusieurs plateformes.</p>
-        </article>
-      </aside>
+    <section class="method-grid">
+      <article class="panel"><p class="eyebrow">Méthode</p><h2>Ce que Pulse Emploi fait en plus</h2><p class="method">Les annonces sont récupérées via des API officielles, converties vers un modèle commun, dédupliquées entre plateformes puis analysées avec les mêmes règles. Cela permet de comparer les sources au lieu de compter deux fois une même opportunité.</p></article>
+      <article class="panel"><p class="eyebrow">Limites</p><h2>À interpréter avec prudence</h2><p class="method">Toutes les plateformes ne sont pas couvertes. Les salaires restent partiellement renseignés et les doublons sont détectés par heuristiques. Les tendances deviennent plus robustes avec plusieurs jours d'historique.</p></article>
     </section>
   </main>
 
-  <footer>Pulse Emploi · Projet étudiant · Données issues des sources affichées dans chaque annonce.</footer>
+  <footer>Pulse Emploi · Projet étudiant · Sources affichées dans chaque offre · Données consolidées quotidiennement.</footer>
   <script src="assets/observatoire.js"></script>
 </body>
 </html>
