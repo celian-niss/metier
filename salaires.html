@@ -16,6 +16,7 @@
   <div id="filtres-ici"></div>
 
   <div class="phrase" id="phrase-salaire" style="margin-top:24px">—</div>
+  <div class="fiabilite" id="fiabilite-salaire"></div>
   <div class="grille" style="margin-top:16px">
     <div class="carte large"><h3>Selon le niveau de poste <small>— de la médiane des salaires minimum à celle des maximum</small></h3><div class="zone"><canvas id="g-paie-niveau"></canvas></div></div>
     <div class="carte large"><h3>Selon le métier <small>— métiers cochés comptant au moins 8 offres avec salaire</small></h3><div class="zone haute"><canvas id="g-paie-metier"></canvas></div></div>
@@ -37,6 +38,10 @@ function rendre(offres, D) {
 
   const milieux = avecSal.map(o => o.smax != null ? (o.smin + o.smax) / 2 : o.smin);
   const q1 = quantile(milieux, .25), q3 = quantile(milieux, .75);
+  document.getElementById("fiabilite-salaire").innerHTML = avecSal.length
+    ? `<span class="fiabilite-badge">${avecSal.length >= 30 ? "Échantillon solide" : avecSal.length >= 10 ? "Échantillon moyen" : "Échantillon faible"}</span><span>${pct(avecSal.length, n)} % des offres sélectionnées affichent un salaire. Les graphiques ci-dessous ne décrivent que ce sous-ensemble.</span>`
+    : `<span class="fiabilite-badge faible">Pas de données salariales</span><span>Aucune offre de cette sélection ne permet une analyse salariale.</span>`;
+
   document.getElementById("phrase-salaire").innerHTML = avecSal.length < 5
     ? (avecSal.length ? `Seulement ${avecSal.length} offre(s) de cette sélection affichent un salaire : trop peu pour en tirer quoi que ce soit.` : "Aucune offre de cette sélection n'affiche de salaire.")
     : `Sur les <b>${avecSal.length}</b> offres qui affichent un salaire (${pct(avecSal.length, n)} % de la sélection), la moitié propose entre <b>${euro(q1, 100)}</b> et <b>${euro(q3, 100)}</b> brut par an, soit environ <b>${euro(net(q1), 10)}</b> à <b>${euro(net(q3), 10)}</b> net par mois.`;
