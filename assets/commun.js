@@ -260,7 +260,7 @@ const HTML_FILTRES = `
     <div class="filtres">
       <div class="filtre-metiers-detail">
         <h3>Métiers précis</h3>
-        <label class="recherche-filtre"><input id="recherche-metier" type="search" placeholder="Rechercher un métier…"></label>
+        <label class="recherche-filtre"><input id="recherche-metier" type="search" aria-label="Rechercher un métier" placeholder="Rechercher un métier…"></label>
         <div class="metiers" id="metiers"></div>
         <div class="boutons">
           <button data-groupe="tous" type="button">Tout cocher</button>
@@ -273,7 +273,7 @@ const HTML_FILTRES = `
       </div>
       <div class="filtre-competences">
         <h3>Compétences <small>— optionnel</small></h3>
-        <label class="recherche-filtre"><input id="recherche-competence" type="search" placeholder="SEO, CRM, GA4…"></label>
+        <label class="recherche-filtre"><input id="recherche-competence" type="search" aria-label="Rechercher une compétence" placeholder="SEO, CRM, GA4…"></label>
         <div class="cases cases-competences" id="f-competences"></div>
         <div class="boutons">
           <button type="button" id="competences-vider">Effacer les compétences</button>
