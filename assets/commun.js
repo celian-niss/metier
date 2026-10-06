@@ -229,11 +229,40 @@ function filtrer(f) {
   });
 }
 
+/* Carte d'offre réutilisable sur l'accueil, la page Offres et les recruteurs. */
+function carteOffre(o) {
+  const k = niv(o);
+  const outils = (o.outils || []).slice(0, 3);
+  const titre = o.intitule || "Offre sans intitulé";
+  const entreprise = o.entreprise || "Employeur non précisé";
+  return `<article class="job-card-v2">
+    <div class="job-card-top">
+      <div class="job-card-heading">
+        <span class="job-card-date">${o.date ? dateFr(o.date) : "Date non précisée"}</span>
+        <h3>${titre}</h3>
+        <p>${entreprise}</p>
+      </div>
+      <span class="job-contract">${libContratOffre(o)}</span>
+    </div>
+    <div class="job-card-meta">
+      <span>${o.lieu || "Lieu non précisé"}</span>
+      <span>${libNiv(k)}</span>
+      ${o.teletravail ? '<span>Télétravail</span>' : ""}
+    </div>
+    ${outils.length ? `<div class="job-card-skills">${outils.map(x => `<span>${x}</span>`).join("")}</div>` : ""}
+    <div class="job-card-bottom">
+      <div class="job-card-pay">${salaireCourt(o) || "Salaire non communiqué"}</div>
+      ${o.url ? `<a class="job-card-link" href="${o.url}" target="_blank" rel="noopener">Voir l’offre <span aria-hidden="true">↗</span></a>` : '<span class="job-card-link disabled">Lien indisponible</span>'}
+    </div>
+  </article>`;
+}
+
 /* ============================================================
    4) NAVIGATION ET PANNEAU DE FILTRES, IDENTIQUES PARTOUT
    ============================================================ */
 const PAGES = [
   ["index.html", "Accueil"],
+  ["offres.html", "Offres"],
   ["salaires.html", "Salaires"],
   ["exigences.html", "Compétences"],
   ["recruteurs.html", "Recruteurs"],

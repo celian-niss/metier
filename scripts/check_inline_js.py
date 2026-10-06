@@ -1,11 +1,11 @@
-"""Vérifie la syntaxe JavaScript inline des cinq pages HTML avec Node."""
+"""Vérifie la syntaxe JavaScript inline des pages HTML avec Node."""
 import re
 import subprocess
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PAGES = ["index.html", "salaires.html", "exigences.html", "recruteurs.html", "mouvement.html"]
+PAGES = ["index.html", "offres.html", "salaires.html", "exigences.html", "recruteurs.html", "mouvement.html"]
 
 def main():
     erreurs = []
