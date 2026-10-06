@@ -1265,3 +1265,62 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible{
   .geo-section>summary{align-items:flex-start}
   .geo-section>summary>span{display:none}
 }
+
+
+/* ============================================================
+   V12 — lecture statistique avancée
+   ============================================================ */
+.stats-mini{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px
+}
+.stats-mini>div{
+  min-width:0;
+  padding:13px 14px;
+  border:1px solid #eceef4;
+  border-radius:12px;
+  background:#fafbfe
+}
+.stats-mini b{
+  display:block;
+  color:var(--encre);
+  font-size:1.12rem;
+  line-height:1.15;
+  letter-spacing:-.025em
+}
+.stats-mini span{
+  display:block;
+  margin-top:5px;
+  color:#64748b;
+  font-size:.68rem;
+  line-height:1.35
+}
+.stats-mini-page{
+  margin-top:18px;
+  padding:14px;
+  border:1px solid var(--trait);
+  border-radius:14px;
+  background:#fff
+}
+.insight{
+  margin:14px 0 0;
+  padding:10px 12px;
+  border-left:3px solid var(--accent);
+  border-radius:0 9px 9px 0;
+  background:#faf9ff;
+  color:#5f6b7a;
+  font-size:.74rem;
+  line-height:1.5
+}
+.insight b{color:var(--encre)}
+.home-stats{margin-top:34px}
+.home-stats .carte.large .stats-mini{margin-top:4px}
+.analyse-grid+.titre-section{margin-top:44px}
+
+@media(max-width:760px){
+  .stats-mini{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+  .stats-mini{grid-template-columns:1fr}
+}
