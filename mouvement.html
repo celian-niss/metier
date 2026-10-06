@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Le marché bouge — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=11">
+<link rel="stylesheet" href="assets/commun.css?v=12">
 </head>
 <body>
 <main>
@@ -21,12 +21,20 @@
 
   <div id="filtres-ici"></div>
 
+  <div class="stats-mini stats-mini-page" id="stats-mouvement"></div>
+
   <div class="titre-section"><div><span class="sur-titre">Tendance</span><h2>Évolution du volume d’offres</h2></div></div>
   <div class="carte analyse-principale"><div class="card-head"><div><h3>Offres actives à chaque extraction</h3><p id="note-serie"></p></div></div><div class="zone chart-hero"><canvas id="g-serie"></canvas></div></div>
 
   <div class="grille" style="margin-top:18px">
-    <div class="carte"><div class="card-head"><h3>Fraîcheur des annonces</h3><p>Priorisez les annonces les plus récentes.</p></div><div class="zone"><canvas id="g-fraicheur"></canvas></div></div>
-    <div class="carte quality-card"><div class="card-head"><h3>Qualité des données</h3><p>Couverture des champs utilisés dans l’analyse.</p></div><div class="quality-list" id="qualite-donnees"></div></div>
+    <div class="carte"><div class="card-head"><h3>Fraîcheur des annonces</h3><p>Répartition selon l’âge des offres encore actives.</p></div><div class="zone"><canvas id="g-fraicheur"></canvas></div><p class="insight" id="insight-fraicheur"></p></div>
+    <div class="carte quality-card"><div class="card-head"><h3>Qualité des données</h3><p>Couverture globale des champs utilisés dans l’analyse.</p></div><div class="quality-list" id="qualite-donnees"></div></div>
+  </div>
+
+  <div class="titre-section"><div><span class="sur-titre">Dynamique</span><h2>Ce qui change d’une collecte à l’autre</h2></div><span class="aide-section">Distinguer la tendance générale des variations quotidiennes</span></div>
+  <div class="grille">
+    <div class="carte large"><div class="card-head"><div><h3>Variation entre deux extractions</h3><p>Écart du nombre d’offres actives par rapport à la collecte précédente.</p></div></div><div class="zone haute"><canvas id="g-variation"></canvas></div><p class="insight" id="insight-variation"></p></div>
+    <div class="carte large"><div class="card-head"><div><h3>Profil de qualité du jeu de données</h3><p>Vue synthétique de la complétude globale des principaux champs.</p></div></div><div class="zone haute"><canvas id="g-qualite-radar"></canvas></div><p class="insight">Cette qualité est calculée sur l’ensemble du jeu de données, pas uniquement sur les filtres actifs.</p></div>
   </div>
 
   <details class="carte limites-details" id="limites">
@@ -44,7 +52,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=11"></script>
+<script src="assets/commun.js?v=12"></script>
 <script>
 /* ============ Le marché bouge ============ */
 function rendre(offres, D) {
@@ -61,9 +69,18 @@ function rendre(offres, D) {
     + `<div class="quality-foot"><span>Doublons probables</span><b>${q.doublons_probables ?? 0}</b></div>`;
 
   const serie = (D.serie || []).map(j => ({ date: j.date, total: [...f.metiers].reduce((s, c) => s + ((j.par_metier && j.par_metier[c]) || 0), 0) }));
+  const moyMobile = serie.map((x,i) => {
+    const debut = Math.max(0, i - 6);
+    const lot = serie.slice(debut, i + 1);
+    return Math.round(lot.reduce((s,v) => s + v.total, 0) / lot.length);
+  });
   dessiner("g-serie", "line",
-    { labels: serie.map(x => dateFr(x.date, true)), datasets: [{ data: serie.map(x => x.total), borderColor: couleur, backgroundColor: pale, fill: true, tension: .2, pointRadius: 4 }] },
-    { scales: { y: { beginAtZero: true } } });
+    { labels: serie.map(x => dateFr(x.date, true)), datasets: [
+      { label: "Offres actives", data: serie.map(x => x.total), borderColor: couleur, backgroundColor: pale, fill: true, tension: .22, pointRadius: 3 },
+      { label: "Moyenne mobile 7 collectes", data: moyMobile, borderColor: "#10a37f", backgroundColor: "transparent", fill: false, tension: .25, pointRadius: 0, borderDash: [6,4] }
+    ] },
+    { plugins: { legend: { display: serie.length > 2, position: "bottom", labels: { boxWidth: 12, boxHeight: 12, padding: 12 } } },
+      scales: { y: { beginAtZero: true } } });
   document.getElementById("note-serie").textContent = serie.length < 2
     ? "Une seule extraction pour l'instant : la tendance apparaîtra au fil des jours, l'Action GitHub relance la collecte chaque matin."
     : (() => {
@@ -75,7 +92,46 @@ function rendre(offres, D) {
 
   const FRAIS = [["Moins de 7 jours", j => j < 7], ["7 à 30 jours", j => j >= 7 && j < 30], ["1 à 3 mois", j => j >= 30 && j < 90], ["Plus de 3 mois", j => j >= 90]];
   const ages = offres.map(age).filter(j => j != null && j >= 0);
-  barres("g-fraicheur", FRAIS.map(x => x[0]), FRAIS.map(([, test]) => ages.filter(test).length), true, " offres");
+  const fraisValeurs = FRAIS.map(([, test]) => ages.filter(test).length);
+  anneau("g-fraicheur", FRAIS.map(x => x[0]), fraisValeurs);
+  document.getElementById("insight-fraicheur").innerHTML = ages.length
+    ? `<b>Lecture :</b> ${pct(fraisValeurs[0], ages.length)} % des annonces datées ont moins de 7 jours.`
+    : "Aucune date exploitable dans cette sélection.";
+
+  const first = serie[0]?.total ?? 0;
+  const last = serie.at(-1)?.total ?? 0;
+  const precedent = serie.length > 1 ? serie.at(-2).total : null;
+  const evolGlobale = first ? Math.round((last-first)*100/first) : 0;
+  const deltaDernier = precedent == null ? null : last-precedent;
+  document.getElementById("stats-mouvement").innerHTML = [
+    [last || "—", "offres au dernier relevé"],
+    [deltaDernier == null ? "—" : (deltaDernier > 0 ? "+" : "") + deltaDernier, "variation dernière collecte"],
+    [serie.length > 1 ? (evolGlobale > 0 ? "+" : "") + evolGlobale + " %" : "—", "évolution depuis le début"],
+    [serie.length, "extractions disponibles"]
+  ].map(([v,l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
+
+  const variations = serie.slice(1).map((x,i) => ({
+    date: x.date,
+    delta: x.total - serie[i].total
+  }));
+  dessiner("g-variation", "bar",
+    { labels: variations.map(x => dateFr(x.date, true)),
+      datasets: [{ data: variations.map(x => x.delta),
+        backgroundColor: variations.map(x => x.delta >= 0 ? "rgba(16,163,127,.72)" : "rgba(239,68,68,.65)"),
+        borderRadius: 4 }] },
+    { plugins: { tooltip: { callbacks: { label: c => `${c.parsed.y > 0 ? "+" : ""}${c.parsed.y} offres` } } },
+      scales: { y: { grid: { color: "rgba(148,163,184,.10)" } }, x: { grid: { display: false } } } });
+  const hausses = variations.filter(x => x.delta > 0).length;
+  const baisses = variations.filter(x => x.delta < 0).length;
+  document.getElementById("insight-variation").innerHTML = variations.length
+    ? `<b>Lecture :</b> sur ${variations.length} écarts observés, ${hausses} sont en hausse et ${baisses} en baisse.`
+    : "Il faut au moins deux extractions pour mesurer une variation.";
+
+  dessiner("g-qualite-radar", "radar",
+    { labels: ["Salaires","Géolocalisation","Formation","Compétences FT","Employeur"],
+      datasets: [{ data: [q.salaire_pct||0,q.position_pct||0,q.formation_pct||0,q.competences_pct||0,q.entreprise_pct||0],
+        backgroundColor: "rgba(98,91,246,.12)", borderColor: couleur, borderWidth: 2, pointRadius: 3 }] },
+    { scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, grid: { color: "rgba(148,163,184,.14)" }, angleLines: { color: "rgba(148,163,184,.14)" }, pointLabels: { font: { size: 11 } } } } });
 }
 
 Commun.demarrer(rendre);
