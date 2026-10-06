@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Pulse Emploi — Observatoire Marketing & Digital</title>
   <meta name="description" content="Observatoire multisource des offres d'emploi en marketing, communication et digital en France.">
-  <link rel="stylesheet" href="assets/observatoire.css">
+  <link rel="stylesheet" href="assets/observatoire.css?v=2">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="observatoire.html"><span class="brand-mark">P</span><span>Pulse Emploi</span></a>
-    <nav class="mini-nav"><a href="#marche">Marché</a><a href="#salaires">Salaires</a><a href="#recruteurs">Recruteurs</a><a href="#offres">Offres</a></nav>
+    <a class="brand" href="index.html" aria-label="Pulse Emploi — accueil"><span class="brand-mark">P</span><span><b>Pulse Emploi</b><small>Observatoire emploi · marketing & digital</small></span></a>
+    <nav class="mini-nav" aria-label="Navigation principale">
+      <a href="index.html">Vue d’ensemble</a>
+      <a href="offres.html">Offres</a>
+      <a href="observatoire.html" class="active" aria-current="page">Marché</a>
+      <a href="salaires.html">Analyses</a>
+    </nav>
     <div class="status"><span id="status-dot"></span><span id="maj">Chargement…</span></div>
   </header>
 
@@ -29,12 +34,31 @@
       </div>
     </section>
 
-    <section class="filters">
-      <label class="search"><span>⌕</span><input id="q" type="search" placeholder="Métier, entreprise, compétence, ville…"></label>
-      <select id="source"><option value="">Toutes les sources</option></select>
-      <select id="contrat"><option value="">Tous les contrats</option></select>
-      <label class="check"><input id="remote" type="checkbox"> Télétravail mentionné</label>
-      <button id="reset" type="button">Réinitialiser</button>
+    <section class="filters" aria-label="Filtres du marché">
+      <div class="filters-main">
+        <label class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="Métier, entreprise, compétence, ville…" aria-label="Rechercher dans les offres"></label>
+        <select id="source" aria-label="Filtrer par source"><option value="">Toutes les sources</option></select>
+        <select id="contrat" aria-label="Filtrer par contrat"><option value="">Tous les contrats</option></select>
+        <select id="sort" aria-label="Trier les offres">
+          <option value="recent">Plus récentes</option>
+          <option value="salary">Salaire décroissant</option>
+          <option value="skills">Plus de compétences détectées</option>
+        </select>
+      </div>
+      <div class="filters-secondary">
+        <label class="check"><input id="remote" type="checkbox"> Télétravail mentionné</label>
+        <div class="skill-picker">
+          <button id="skill-toggle" type="button" aria-expanded="false">Compétences <span id="skill-count">0</span></button>
+          <div id="skill-panel" class="skill-panel" hidden>
+            <label><span>Rechercher une compétence</span><input id="skill-search" type="search" placeholder="SEO, CRM, GA4…"></label>
+            <div id="skill-options" class="skill-options"></div>
+            <button id="skill-clear" type="button">Effacer la sélection</button>
+          </div>
+        </div>
+        <button id="reset" type="button">Réinitialiser</button>
+      </div>
+      <div id="quick-skills" class="quick-skills" aria-label="Compétences fréquentes"></div>
+      <div id="active-filters" class="active-filters" aria-live="polite"></div>
     </section>
 
     <section class="kpis">
@@ -99,6 +123,6 @@
   </main>
 
   <footer>Pulse Emploi · Projet étudiant · Sources affichées dans chaque offre · Données consolidées quotidiennement.</footer>
-  <script src="assets/observatoire.js"></script>
+  <script src="assets/observatoire.js?v=2"></script>
 </body>
 </html>
