@@ -289,9 +289,9 @@ function poserNavEtFiltres() {
     <header class="topbar">
       <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
         <span class="pulse-mark">P</span>
-        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire marketing</small></span>
+        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire des métiers du marketing</small></span>
       </a>
-      <nav class="nav">` + PAGES.map(([url, lib]) =>
+      <nav class="nav" aria-label="Navigation principale">` + PAGES.map(([url, lib]) =>
         `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>
       <div class="data-status" id="header-maj"><i></i><span>Chargement…</span></div>
     </header>`;
