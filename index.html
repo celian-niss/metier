@@ -173,6 +173,10 @@ const FONDS = {
 };
 carte = L.map("map", { scrollWheelZoom: true, zoomSnap: .5, zoomControl: true }).setView(...VUES.france);
 FONDS.gris.addTo(carte);
+const geoSection = document.querySelector(".geo-section");
+if (geoSection) geoSection.addEventListener("toggle", () => {
+  if (geoSection.open) setTimeout(() => carte.invalidateSize(), 80);
+});
 // Grappes : un chiffre par zone tant qu'on est loin, les points individuels dès qu'on zoome.
 calque = L.markerClusterGroup({
   maxClusterRadius: 45, disableClusteringAtZoom: 12, spiderfyOnMaxZoom: true, showCoverageOnHover: false, chunkedLoading: true,
