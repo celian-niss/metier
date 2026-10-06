@@ -166,6 +166,28 @@ function barres(id, etiquettes, valeurs, horizontal = true, suffixe = "", teinte
                 y: { grid: { display: horizontal }, ticks: { autoSkip: !horizontal } } } });
 }
 
+/* Anneau de composition, utile pour les parts d'un total. */
+function anneau(id, etiquettes, valeurs, suffixe = " offres") {
+  dessiner(id, "doughnut",
+    { labels: etiquettes, datasets: [{ data: valeurs, backgroundColor: ["#625bf6","#10a37f","#f59e0b","#3b82f6","#a78bfa","#94a3b8"], borderWidth: 0, hoverOffset: 3 }] },
+    { cutout: "68%",
+      plugins: {
+        legend: { display: true, position: "bottom", labels: { boxWidth: 10, boxHeight: 10, padding: 14 } },
+        tooltip: { callbacks: { label: c => `${c.label} : ${c.parsed}${suffixe}` } }
+      } });
+}
+
+/* Nuage de points pour visualiser une relation entre deux variables numériques. */
+function nuage(id, points, xLabel, yLabel, tooltip) {
+  dessiner(id, "scatter",
+    { datasets: [{ data: points, backgroundColor: "rgba(98,91,246,.5)", pointRadius: 4, pointHoverRadius: 6 }] },
+    { plugins: { tooltip: { callbacks: { label: tooltip || (c => `x: ${c.parsed.x}, y: ${c.parsed.y}`) } } },
+      scales: {
+        x: { beginAtZero: true, title: { display: true, text: xLabel }, grid: { color: "rgba(148,163,184,.10)" } },
+        y: { beginAtZero: false, title: { display: true, text: yLabel }, grid: { color: "rgba(148,163,184,.10)" } }
+      } });
+}
+
 /* Barres empilées par niveau de poste. */
 function empilees(id, etiquettes, offresParEtiquette, horizontal = false) {
   // Un niveau décoché dans les filtres n'a plus aucune barre : on le retire aussi de la

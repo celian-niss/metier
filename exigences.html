@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce qu'on vous demande — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=11">
+<link rel="stylesheet" href="assets/commun.css?v=12">
 </head>
 <body>
 <main>
@@ -31,6 +31,13 @@
   <div class="titre-section"><div><span class="sur-titre">Analyse principale</span><h2>Les outils les plus demandés</h2></div></div>
   <div class="carte analyse-principale"><div class="card-head"><div><h3>Outils cités selon le niveau de poste</h3><p>Part des offres de chaque niveau qui mentionnent l’outil.</p></div></div><div class="zone geante"><canvas id="g-outils"></canvas></div><p class="note" id="note-outils"></p></div>
 
+  <div class="titre-section"><div><span class="sur-titre">Profils recherchés</span><h2>Ce qui distingue les postes juniors et seniors</h2></div><span class="aide-section">Comparer les attentes plutôt que seulement les volumes</span></div>
+  <div class="grille">
+    <div class="carte large"><div class="card-head"><div><h3>Outils : junior vs senior</h3><p>Part des annonces de chaque groupe qui citent l’outil.</p></div></div><div class="zone haute"><canvas id="g-outils-junior-senior"></canvas></div><p class="insight" id="insight-junior-senior"></p></div>
+    <div class="carte"><div class="card-head"><div><h3>Intensité des outils mentionnés</h3><p>Nombre d’outils détectés par annonce.</p></div></div><div class="zone"><canvas id="g-outils-densite"></canvas></div><p class="insight" id="insight-densite"></p></div>
+    <div class="carte"><div class="card-head"><div><h3>Compétences qui apparaissent ensemble</h3><p>Paires d’outils les plus fréquentes dans une même annonce.</p></div></div><div class="zone"><canvas id="g-paires-outils"></canvas></div><p class="insight" id="insight-paires"></p></div>
+  </div>
+
   <div class="titre-section"><div><span class="sur-titre">Pour aller plus loin</span><h2>Expérience, diplôme et compétences officielles</h2></div></div>
   <div class="grille">
     <div class="carte"><div class="card-head"><h3>Expérience demandée</h3></div><div class="zone"><canvas id="g-experience"></canvas></div></div>
@@ -41,7 +48,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=11"></script>
+<script src="assets/commun.js?v=12"></script>
 <script>
 /* ============ Ce qu'on vous demande ============ */
 function rendre(offres, D) {
@@ -106,6 +113,59 @@ function rendre(offres, D) {
   const comp = compter(offres.flatMap(o => o.competences || []), x => x).slice(0, 12);
   zoneSelonBarres("g-competences", comp.length, 62);
   barres("g-competences", comp.map(x => enLignes(x[0])), comp.map(x => x[1]), true, " offres");
+
+  /* Junior vs senior : compare les taux, pas les volumes bruts. */
+  const juniorsNiv = offres.filter(o => ["assistant","charge"].includes(niv(o)));
+  const seniorsNiv = offres.filter(o => ["responsable","directeur"].includes(niv(o)));
+  const topCompare = compter(offres.flatMap(o => o.outils || []), x => x).slice(0, 10).map(x => x[0]);
+  dessiner("g-outils-junior-senior", "bar",
+    { labels: topCompare,
+      datasets: [
+        { label: "Junior / chargé", backgroundColor: COUL_NIV.charge,
+          data: topCompare.map(nom => pct(juniorsNiv.filter(o => (o.outils || []).includes(nom)).length, juniorsNiv.length)) },
+        { label: "Responsable / direction", backgroundColor: COUL_NIV.directeur,
+          data: topCompare.map(nom => pct(seniorsNiv.filter(o => (o.outils || []).includes(nom)).length, seniorsNiv.length)) }
+      ] },
+    { indexAxis: "y",
+      plugins: { legend: { display: true, position: "bottom", labels: { boxWidth: 11, boxHeight: 11, padding: 12 } },
+                 tooltip: { callbacks: { label: c => `${c.dataset.label} : ${c.parsed.x} %` } } },
+      scales: { x: { beginAtZero: true, ticks: { callback: v => v + " %" } }, y: { grid: { display: false } } } });
+  let plusSenior = null;
+  if (juniorsNiv.length && seniorsNiv.length) {
+    plusSenior = topCompare.map(nom => {
+      const j = pct(juniorsNiv.filter(o => (o.outils || []).includes(nom)).length, juniorsNiv.length);
+      const s = pct(seniorsNiv.filter(o => (o.outils || []).includes(nom)).length, seniorsNiv.length);
+      return [nom, s-j, j, s];
+    }).sort((a,b) => b[1]-a[1])[0];
+  }
+  document.getElementById("insight-junior-senior").innerHTML = plusSenior
+    ? `<b>Lecture :</b> <b>${plusSenior[0]}</b> est l’outil qui différencie le plus les postes seniors dans ce top (+${plusSenior[1]} points : ${plusSenior[2]} % vs ${plusSenior[3]} %).`
+    : "Pas assez de données pour comparer les niveaux.";
+
+  /* Densité : combien d'outils distincts sont détectés dans chaque annonce. */
+  const densite = [
+    ["Aucun", offres.filter(o => !(o.outils || []).length).length],
+    ["1 outil", offres.filter(o => (o.outils || []).length === 1).length],
+    ["2 outils", offres.filter(o => (o.outils || []).length === 2).length],
+    ["3 outils ou +", offres.filter(o => (o.outils || []).length >= 3).length]
+  ];
+  anneau("g-outils-densite", densite.map(x => x[0]), densite.map(x => x[1]));
+  const multi = densite[3][1];
+  document.getElementById("insight-densite").innerHTML =
+    `<b>Lecture :</b> ${pct(multi, n)} % des offres citent au moins trois outils suivis par l’observatoire.`;
+
+  /* Cooccurrences d'outils : les combinaisons les plus présentes dans une même offre. */
+  const paires = [];
+  for (const o of offres) {
+    const os = [...new Set(o.outils || [])].slice().sort();
+    for (let i = 0; i < os.length; i++) for (let j = i + 1; j < os.length; j++) paires.push(os[i] + " + " + os[j]);
+  }
+  const topPaires = compter(paires, x => x).slice(0, 8);
+  zoneSelonBarres("g-paires-outils", topPaires.length, 42);
+  barres("g-paires-outils", topPaires.map(x => enLignes(x[0], 28)), topPaires.map(x => x[1]), true, " offres");
+  document.getElementById("insight-paires").innerHTML = topPaires.length
+    ? `<b>Lecture :</b> la combinaison la plus fréquente est <b>${topPaires[0][0]}</b>, présente dans ${topPaires[0][1]} offres.`
+    : "Aucune combinaison suffisamment fréquente dans cette sélection.";
 }
 
 Commun.demarrer(rendre);

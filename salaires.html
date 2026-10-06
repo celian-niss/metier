@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce que ça paie — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=11">
+<link rel="stylesheet" href="assets/commun.css?v=12">
 </head>
 <body>
 <main>
@@ -24,6 +24,7 @@
   <section class="summary-panel">
     <div class="phrase" id="phrase-salaire">—</div>
     <div class="fiabilite" id="fiabilite-salaire"></div>
+    <div class="stats-mini" id="stats-salaires"></div>
   </section>
 
   <div class="titre-section"><div><span class="sur-titre">Analyse principale</span><h2>Salaire selon le niveau de poste</h2></div></div>
@@ -33,12 +34,20 @@
     <div class="carte"><div class="card-head"><h3>Par type de contrat</h3></div><div class="zone"><canvas id="g-paie-contrat"></canvas></div></div>
     <div class="carte"><div class="card-head"><h3>Par territoire</h3><p>Puy-de-Dôme, Île-de-France et reste de la France.</p></div><div class="zone"><canvas id="g-paie-idf"></canvas></div></div>
   </div>
-  <p class="note" style="margin-top:12px">Ce sont les salaires <b>affichés</b> : moins d'un tiers des annonces en donnent un, plutôt des PME et des postes juniors. Le vrai marché paie sans doute un peu mieux, surtout en haut de l'échelle. Le net mensuel est une estimation (brut × 0,78 / 12, avant impôt sur le revenu).</p>
+
+  <div class="titre-section"><div><span class="sur-titre">Distribution</span><h2>Comment les salaires se répartissent-ils ?</h2></div><span class="aide-section">Une lecture complémentaire aux médianes</span></div>
+  <div class="grille">
+    <div class="carte"><div class="card-head"><div><h3>Distribution des salaires affichés</h3><p>Milieu de fourchette salariale annuelle.</p></div></div><div class="zone"><canvas id="g-paie-distribution"></canvas></div><p class="insight" id="insight-distribution"></p></div>
+    <div class="carte"><div class="card-head"><div><h3>Expérience et rémunération</h3><p>Chaque point représente une offre avec expérience et salaire exploitables.</p></div></div><div class="zone"><canvas id="g-paie-exp"></canvas></div><p class="insight" id="insight-exp"></p></div>
+    <div class="carte large"><div class="card-head"><div><h3>Qui affiche le plus souvent un salaire ?</h3><p>Part des offres avec rémunération renseignée selon le type de contrat.</p></div></div><div class="zone"><canvas id="g-couverture-contrat"></canvas></div><p class="insight" id="insight-couverture"></p></div>
+  </div>
+
+  <p class="note" style="margin-top:12px">Les analyses salariales portent uniquement sur les annonces qui affichent une rémunération. Elles décrivent donc un sous-échantillon du marché et ne doivent pas être lues comme un salaire garanti pour l’ensemble des postes.</p>
 
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=11"></script>
+<script src="assets/commun.js?v=12"></script>
 <script>
 /* ============ Ce que ça paie ============ */
 function rendre(offres, D) {
@@ -55,6 +64,14 @@ function rendre(offres, D) {
   document.getElementById("phrase-salaire").innerHTML = avecSal.length < 5
     ? (avecSal.length ? `Seulement ${avecSal.length} offre(s) de cette sélection affichent un salaire : trop peu pour en tirer quoi que ce soit.` : "Aucune offre de cette sélection n'affiche de salaire.")
     : `Sur les <b>${avecSal.length}</b> offres qui affichent un salaire (${pct(avecSal.length, n)} % de la sélection), la moitié propose entre <b>${euro(q1, 100)}</b> et <b>${euro(q3, 100)}</b> brut par an, soit environ <b>${euro(net(q1), 10)}</b> à <b>${euro(net(q3), 10)}</b> net par mois.`;
+
+  const med = mediane(milieux), p90 = quantile(milieux, .9);
+  document.getElementById("stats-salaires").innerHTML = [
+    [avecSal.length, "offres avec salaire"],
+    [n ? pct(avecSal.length, n) + " %" : "—", "couverture salariale"],
+    [med != null ? euro(med, 100) : "—", "médiane annuelle"],
+    [p90 != null ? euro(p90, 100) : "—", "90e percentile"]
+  ].map(([v,l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
 
   // a) par niveau de poste
   flottantes("g-paie-niveau", NIVEAUX.map(([k, l]) => {
@@ -83,6 +100,49 @@ function rendre(offres, D) {
     { label: "Île-de-France", lot: avecSal.filter(o => IDF.has(o.dep)) },
     { label: "Reste de la France", lot: avecSal.filter(o => o.dep && o.dep !== "63" && !IDF.has(o.dep)) },
   ].map(x => ({ label: x.label, n: x.lot.length, paire: fourchette(x.lot) })).filter(x => x.paire && x.n >= 3));
+
+  /* Distribution : histogramme du milieu de fourchette. */
+  const BINS = [
+    ["< 25 k€", 0, 25000], ["25–30 k€", 25000, 30000], ["30–35 k€", 30000, 35000],
+    ["35–40 k€", 35000, 40000], ["40–50 k€", 40000, 50000], ["50–60 k€", 50000, 60000],
+    ["60 k€ et +", 60000, Infinity]
+  ];
+  const salairesPlausibles = milieux.filter(v => v >= 12000 && v <= 200000);
+  const hist = BINS.map(([label,min,max]) => [label, salairesPlausibles.filter(v => v >= min && v < max).length]);
+  barres("g-paie-distribution", hist.map(x => x[0]), hist.map(x => x[1]), false, " offres");
+  const modal = [...hist].sort((a,b) => b[1]-a[1])[0];
+  document.getElementById("insight-distribution").innerHTML = modal && modal[1]
+    ? `<b>Lecture :</b> la tranche la plus représentée est <b>${modal[0]}</b> avec ${modal[1]} offre${modal[1] > 1 ? "s" : ""}.`
+    : "Pas assez de salaires exploitables pour lire la distribution.";
+
+  /* Expérience x salaire : relation observée sur les annonces renseignées. */
+  const points = avecSal.filter(o => o.exp_ans != null && o.exp_ans >= 0 && o.exp_ans <= 15).map(o => ({
+    x: o.exp_ans,
+    y: o.smax != null ? (o.smin + o.smax) / 2 : o.smin,
+    titre: o.intitule || "Offre",
+    entreprise: o.entreprise || "Employeur non précisé"
+  })).filter(p => p.y >= 12000 && p.y <= 200000);
+  nuage("g-paie-exp", points, "Années d’expérience demandées", "Salaire annuel brut", c => {
+    const p = c.raw;
+    return [`${p.titre}`, `${ans(p.x)} · ${euro(p.y,100)}`];
+  });
+  const juniorSal = points.filter(p => p.x <= 2).map(p => p.y);
+  const seniorSal = points.filter(p => p.x >= 5).map(p => p.y);
+  const medJunior = mediane(juniorSal), medSenior = mediane(seniorSal);
+  document.getElementById("insight-exp").innerHTML = medJunior != null && medSenior != null && juniorSal.length >= 5 && seniorSal.length >= 5
+    ? `<b>Lecture :</b> médiane observée à ${euro(medJunior,100)} pour ≤ 2 ans d’expérience contre ${euro(medSenior,100)} pour ≥ 5 ans.`
+    : `<b>Lecture :</b> ${points.length} offres combinent une expérience chiffrée et un salaire exploitable.`;
+
+  /* Couverture salariale par type de contrat. */
+  const couverture = CONTRATS.map(([k,l]) => {
+    const lot = offres.filter(o => familleContrat(o) === k);
+    return [l, lot.length ? pct(lot.filter(o => o.smin != null).length, lot.length) : 0, lot.length];
+  }).filter(x => x[2] > 0);
+  barres("g-couverture-contrat", couverture.map(x => x[0]), couverture.map(x => x[1]), true, " %");
+  const meilleure = [...couverture].sort((a,b) => b[1]-a[1])[0];
+  document.getElementById("insight-couverture").innerHTML = meilleure
+    ? `<b>Lecture :</b> les offres en <b>${meilleure[0]}</b> sont celles qui publient le plus souvent un salaire dans cette sélection (${meilleure[1]} %).`
+    : "Aucune comparaison disponible.";
 }
 
 Commun.demarrer(rendre);
