@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=11">
+<link rel="stylesheet" href="assets/commun.css?v=12">
 </head>
 <body>
 <main>
@@ -41,7 +41,17 @@
     </div>
   </section>
 
-  <!-- ============ 3. OFFRES ============ -->
+  <!-- ============ 3. PANORAMA STATISTIQUE ============ -->
+  <section class="home-stats">
+    <div class="titre-section"><div><span class="sur-titre">Panorama statistique</span><h2>Comment se structure le marché ?</h2></div><span class="aide-section">Une lecture rapide de la composition de votre sélection</span></div>
+    <div class="grille">
+      <div class="carte"><div class="card-head"><div><h3>Répartition des contrats</h3><p>Part de chaque grande famille de contrat.</p></div></div><div class="zone"><canvas id="g-contrats-overview"></canvas></div><p class="insight" id="insight-contrats-overview"></p></div>
+      <div class="carte"><div class="card-head"><div><h3>Niveaux de poste</h3><p>Volume d’offres par niveau détecté dans l’intitulé.</p></div></div><div class="zone"><canvas id="g-niveaux-overview"></canvas></div><p class="insight" id="insight-niveaux-overview"></p></div>
+      <div class="carte large"><div class="card-head"><div><h3>Indicateurs structurels</h3><p>Quatre signaux utiles pour qualifier le marché sélectionné.</p></div></div><div class="stats-mini" id="stats-structure"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. OFFRES ============ -->
   <section class="home-offers">
     <div class="titre-section">
       <div><span class="sur-titre">Opportunités</span><h2>Offres récentes</h2></div>
@@ -87,7 +97,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=11"></script>
+<script src="assets/commun.js?v=12"></script>
 <script>
 /* ============ Accueil : chiffres, carte, départements, contrats ============ */
 let carte, calque;
@@ -120,6 +130,27 @@ function rendre(offres, D) {
     ["Outil le plus cité", topOutil ? `${topOutil[0]} · ${topOutil[1]} offres` : "—"],
     ["Annonces récentes", `${pct(fraiches7, n)} % ont moins de 7 jours`],
   ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
+
+  const contratsOverview = CONTRATS.map(([k,l]) => [l, offres.filter(o => familleContrat(o) === k).length]).filter(x => x[1] > 0);
+  anneau("g-contrats-overview", contratsOverview.map(x => x[0]), contratsOverview.map(x => x[1]));
+  document.getElementById("insight-contrats-overview").innerHTML = topContrat
+    ? `<b>Lecture :</b> le <b>${topContrat[0]}</b> domine la sélection avec ${pct(topContrat[1], n)} % des offres.`
+    : "Aucune donnée de contrat exploitable.";
+
+  const niveauxOverview = NIVEAUX.map(([k,l]) => [l, offres.filter(o => niv(o) === k).length]).filter(x => x[1] > 0);
+  barres("g-niveaux-overview", niveauxOverview.map(x => x[0]), niveauxOverview.map(x => x[1]), true, " offres");
+  const niveauTop = [...niveauxOverview].sort((a,b) => b[1]-a[1])[0];
+  document.getElementById("insight-niveaux-overview").innerHTML = niveauTop
+    ? `<b>Lecture :</b> le niveau <b>${niveauTop[0]}</b> est le plus représenté (${pct(niveauTop[1], n)} %).`
+    : "Aucun niveau exploitable.";
+
+  const avecEntreprise = offres.filter(o => o.entreprise).length;
+  document.getElementById("stats-structure").innerHTML = [
+    [pct(debutants, n) + " %", "ouvertes aux débutants"],
+    [pct(tele, n) + " %", "mentionnent le télétravail"],
+    [pct(avecSal.length, n) + " %", "affichent un salaire"],
+    [pct(avecEntreprise, n) + " %", "identifient l’employeur"]
+  ].map(([v,l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
 
   const recentesAccueil = [...offres]
     .sort((a,b) => (b.date || "").localeCompare(a.date || ""))
