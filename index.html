@@ -9,13 +9,24 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=7">
+<link rel="stylesheet" href="assets/commun.css?v=8">
 </head>
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Le marché du marketing, en clair.</h1>
-  <p class="sous" id="sous">Chargement des données…</p>
+  <section class="page-hero hero-home">
+    <div class="hero-copy">
+      <span class="page-kicker">Observatoire du marché de l’emploi</span>
+      <h1>Le marché du marketing, <em>en clair.</em></h1>
+      <p class="hero-lead">Explorez les offres en marketing digital et opérationnel, puis filtrez le marché selon ce qui vous intéresse réellement.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+    <div class="hero-side">
+      <span>Mis à jour automatiquement</span>
+      <strong id="hero-total">—</strong>
+      <small>offres actives suivies</small>
+    </div>
+  </section>
 
   <!-- ============ 1. FILTRES (posés par commun.js) ============ -->
   <div id="filtres-ici"></div>
@@ -44,11 +55,10 @@
   <div class="carte large"><h3>Chaque point est une offre — survolez pour la lire, cliquez pour l'ouvrir</h3>
     <div class="carte-outils">
       <button data-vue="france">France</button>
-      <button data-vue="clermont">Clermont</button>
+      <button data-vue="clermont">Clermont / 63</button>
       <button data-vue="aura">Auvergne-Rhône-Alpes</button>
       <button data-vue="paris">Île-de-France</button>
-      <button data-fond="gris" class="actif">Fond gris</button>
-      <button data-fond="osm">Fond OpenStreetMap</button>
+      <details class="map-options"><summary>Fond de carte</summary><div><button data-fond="gris" class="actif">Clair</button><button data-fond="osm">OpenStreetMap</button></div></details>
       <span class="legende"><span><i style="background:#0a5cff"></i>cœur marketing</span><span><i style="background:#ff6a00"></i>digital</span><span><i style="background:#8e8e93"></i>frontière</span></span>
     </div>
     <div id="map"></div>
@@ -62,7 +72,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=7"></script>
+<script src="assets/commun.js?v=8"></script>
 <script>
 /* ============ Accueil : chiffres, carte, départements, contrats ============ */
 let carte, calque;
@@ -82,6 +92,8 @@ function rendre(offres, D) {
     [avecSal.length ? euro(mediane(mins), 100) + " → " + euro(mediane(maxs), 100) : "—", "fourchette salariale médiane affichée"],
   ];
   document.getElementById("chiffres").innerHTML = tuiles.map(([v, l]) => `<div class="chiffre"><b>${v}</b><span>${l}</span></div>`).join("");
+  const heroTotal = document.getElementById("hero-total");
+  if (heroTotal) heroTotal.textContent = n.toLocaleString("fr-FR");
 
   const topDep = compter(offres, o => o.dep || null)[0];
   const topContrat = compter(offres, libContratOffre)[0];

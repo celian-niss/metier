@@ -5,34 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce qu'on vous demande — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=7">
+<link rel="stylesheet" href="assets/commun.css?v=8">
 </head>
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Ce qu'on vous demande</h1>
-  <p class="sous" id="sous">Chargement des données…</p>
+  <section class="page-hero">
+    <div class="hero-copy">
+      <span class="page-kicker">Compétences & exigences</span>
+      <h1>Ce que les recruteurs demandent.</h1>
+      <p class="hero-lead">Repérez rapidement les compétences, outils, niveaux d’expérience et diplômes les plus présents.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+  </section>
 
   <div id="filtres-ici"></div>
 
   <section class="lecture compact">
-    <div><span class="sur-titre">Lecture rapide</span><h2>Les signaux à retenir</h2></div>
+    <div><span class="sur-titre">À retenir</span><h2>Les signaux essentiels</h2></div>
     <div class="lecture-grille" id="lecture-exigences"></div>
   </section>
 
-  <div class="chiffres" id="chiffres-demande" style="margin-top:24px"></div>
-  <div class="grille" style="margin-top:16px">
-    <div class="carte"><h3>Combien d'expérience faut-il ? <small>— chaque barre est découpée par niveau de poste : la couleur dit qui est concerné</small></h3><div class="zone"><canvas id="g-experience"></canvas></div></div>
-    <div class="carte"><h3>Quel diplôme demande-t-on ? <small id="sous-formation">— seules les offres qui le précisent, découpées par niveau de poste</small></h3><div class="zone"><canvas id="g-formation"></canvas></div></div>
-    <div class="carte large"><h3>Quels outils faut-il savoir utiliser ? <small>— sur 100 offres d'un même niveau de poste, combien citent l'outil ; une barre par niveau</small></h3><div class="zone geante"><canvas id="g-outils"></canvas></div>
-      <p class="note" id="note-outils"></p></div>
-    <div class="carte large"><h3>Les compétences que France Travail associe à ces offres <small>— les 12 plus fréquentes ; c'est le codage officiel de l'annonce, pas nos mots-clés</small></h3><div class="zone haute"><canvas id="g-competences"></canvas></div></div>
+  <div class="chiffres" id="chiffres-demande" style="margin-top:18px"></div>
+
+  <div class="titre-section"><div><span class="sur-titre">Analyse principale</span><h2>Les outils les plus demandés</h2></div></div>
+  <div class="carte analyse-principale"><div class="card-head"><div><h3>Outils cités selon le niveau de poste</h3><p>Part des offres de chaque niveau qui mentionnent l’outil.</p></div></div><div class="zone geante"><canvas id="g-outils"></canvas></div><p class="note" id="note-outils"></p></div>
+
+  <div class="titre-section"><div><span class="sur-titre">Pour aller plus loin</span><h2>Expérience, diplôme et compétences officielles</h2></div></div>
+  <div class="grille">
+    <div class="carte"><div class="card-head"><h3>Expérience demandée</h3></div><div class="zone"><canvas id="g-experience"></canvas></div></div>
+    <div class="carte"><div class="card-head"><h3>Diplôme demandé</h3><p id="sous-formation">Uniquement quand l’annonce le précise.</p></div><div class="zone"><canvas id="g-formation"></canvas></div></div>
+    <details class="carte large analyse-secondaire"><summary>Voir les compétences France Travail</summary><div class="details-body"><p class="note">Les 12 compétences officielles les plus fréquentes dans les annonces.</p><div class="zone haute"><canvas id="g-competences"></canvas></div></div></details>
   </div>
 
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=7"></script>
+<script src="assets/commun.js?v=8"></script>
 <script>
 /* ============ Ce qu'on vous demande ============ */
 function rendre(offres, D) {

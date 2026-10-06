@@ -5,30 +5,40 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce que ça paie — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=7">
+<link rel="stylesheet" href="assets/commun.css?v=8">
 </head>
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Ce que ça paie <small>— uniquement les offres qui affichent un salaire</small></h1>
-  <p class="sous" id="sous">Chargement des données…</p>
+  <section class="page-hero">
+    <div class="hero-copy">
+      <span class="page-kicker">Rémunération</span>
+      <h1>Combien paie le marché ?</h1>
+      <p class="hero-lead">Comparez les fourchettes de salaire par niveau de poste, métier, contrat et territoire.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+  </section>
 
   <div id="filtres-ici"></div>
 
-  <div class="phrase" id="phrase-salaire" style="margin-top:24px">—</div>
-  <div class="fiabilite" id="fiabilite-salaire"></div>
-  <div class="grille" style="margin-top:16px">
-    <div class="carte large"><h3>Selon le niveau de poste <small>— de la médiane des salaires minimum à celle des maximum</small></h3><div class="zone"><canvas id="g-paie-niveau"></canvas></div></div>
-    <div class="carte large"><h3>Selon le métier <small>— métiers cochés comptant au moins 8 offres avec salaire</small></h3><div class="zone haute"><canvas id="g-paie-metier"></canvas></div></div>
-    <div class="carte"><h3>Selon le type de contrat</h3><div class="zone"><canvas id="g-paie-contrat"></canvas></div></div>
-    <div class="carte"><h3>Selon le territoire — le Puy-de-Dôme, l'Île-de-France, le reste</h3><div class="zone"><canvas id="g-paie-idf"></canvas></div></div>
+  <section class="summary-panel">
+    <div class="phrase" id="phrase-salaire">—</div>
+    <div class="fiabilite" id="fiabilite-salaire"></div>
+  </section>
+
+  <div class="titre-section"><div><span class="sur-titre">Analyse principale</span><h2>Salaire selon le niveau de poste</h2></div></div>
+  <div class="grille analyse-grid" style="margin-top:0">
+    <div class="carte large analyse-principale"><div class="card-head"><div><h3>Fourchettes médianes</h3><p>De la médiane des salaires minimum à celle des maximum.</p></div></div><div class="zone"><canvas id="g-paie-niveau"></canvas></div></div>
+    <details class="carte large analyse-secondaire" open><summary>Comparer par métier</summary><div class="details-body"><p class="note">Métiers cochés comptant au moins 8 offres avec salaire.</p><div class="zone haute"><canvas id="g-paie-metier"></canvas></div></div></details>
+    <div class="carte"><div class="card-head"><h3>Par type de contrat</h3></div><div class="zone"><canvas id="g-paie-contrat"></canvas></div></div>
+    <div class="carte"><div class="card-head"><h3>Par territoire</h3><p>Puy-de-Dôme, Île-de-France et reste de la France.</p></div><div class="zone"><canvas id="g-paie-idf"></canvas></div></div>
   </div>
   <p class="note" style="margin-top:12px">Ce sont les salaires <b>affichés</b> : moins d'un tiers des annonces en donnent un, plutôt des PME et des postes juniors. Le vrai marché paie sans doute un peu mieux, surtout en haut de l'échelle. Le net mensuel est une estimation (brut × 0,78 / 12, avant impôt sur le revenu).</p>
 
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=7"></script>
+<script src="assets/commun.js?v=8"></script>
 <script>
 /* ============ Ce que ça paie ============ */
 function rendre(offres, D) {
