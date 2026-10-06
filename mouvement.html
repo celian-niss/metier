@@ -10,21 +10,23 @@
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Le marché bouge</h1>
-  <p class="sous" id="sous">Chargement des données…</p>
+  <section class="page-hero">
+    <div class="hero-copy">
+      <span class="page-kicker">Évolution du marché</span>
+      <h1>Le marché bouge-t-il ?</h1>
+      <p class="hero-lead">Suivez l’évolution du volume d’offres, leur fraîcheur et la qualité des données disponibles.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+  </section>
 
   <div id="filtres-ici"></div>
 
-  <section class="lecture compact">
-    <div><span class="sur-titre">Qualité des données</span><h2>Ce qu'on peut vraiment lire</h2></div>
-    <div class="lecture-grille" id="qualite-donnees"></div>
-  </section>
+  <div class="titre-section"><div><span class="sur-titre">Tendance</span><h2>Évolution du volume d’offres</h2></div></div>
+  <div class="carte analyse-principale"><div class="card-head"><div><h3>Offres actives à chaque extraction</h3><p id="note-serie"></p></div></div><div class="zone chart-hero"><canvas id="g-serie"></canvas></div></div>
 
-  <div class="grille" style="margin-top:24px">
-    <div class="carte"><h3>Offres actives à chaque extraction</h3><div class="zone"><canvas id="g-serie"></canvas></div>
-      <p class="note" id="note-serie"></p></div>
-    <div class="carte"><h3>Fraîcheur des annonces</h3><div class="zone"><canvas id="g-fraicheur"></canvas></div>
-      <p class="note">Une annonce en ligne depuis plus de trois mois est souvent déjà pourvue, ou republiée en continu par une agence : candidatez d'abord aux fraîches.</p></div>
+  <div class="grille" style="margin-top:18px">
+    <div class="carte"><div class="card-head"><h3>Fraîcheur des annonces</h3><p>Priorisez les annonces les plus récentes.</p></div><div class="zone"><canvas id="g-fraicheur"></canvas></div></div>
+    <div class="carte quality-card"><div class="card-head"><h3>Qualité des données</h3><p>Couverture des champs utilisés dans l’analyse.</p></div><div class="quality-list" id="qualite-donnees"></div></div>
   </div>
 
   <details class="carte limites-details" id="limites">
@@ -50,13 +52,13 @@ function rendre(offres, D) {
 
   const q = D.qualite || {};
   document.getElementById("qualite-donnees").innerHTML = [
-    ["Salaires renseignés", (q.salaire_pct ?? 0) + " %"],
-    ["Positions cartographiables", (q.position_pct ?? 0) + " %"],
-    ["Formation renseignée", (q.formation_pct ?? 0) + " %"],
-    ["Compétences FT disponibles", (q.competences_pct ?? 0) + " %"],
-    ["Employeur identifié", (q.entreprise_pct ?? 0) + " %"],
-    ["Doublons probables", q.doublons_probables ?? 0],
-  ].map(([k,v]) => `<div class="lecture-item"><span>${k}</span><b>${v}</b></div>`).join("");
+    ["Salaires", q.salaire_pct ?? 0],
+    ["Géolocalisation", q.position_pct ?? 0],
+    ["Formation", q.formation_pct ?? 0],
+    ["Compétences FT", q.competences_pct ?? 0],
+    ["Employeur identifié", q.entreprise_pct ?? 0],
+  ].map(([k,v]) => `<div class="quality-row"><div><span>${k}</span><b>${v} %</b></div><progress max="100" value="${v}"></progress></div>`).join("")
+    + `<div class="quality-foot"><span>Doublons probables</span><b>${q.doublons_probables ?? 0}</b></div>`;
 
   const serie = (D.serie || []).map(j => ({ date: j.date, total: [...f.metiers].reduce((s, c) => s + ((j.par_metier && j.par_metier[c]) || 0), 0) }));
   dessiner("g-serie", "line",
