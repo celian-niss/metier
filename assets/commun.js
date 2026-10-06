@@ -420,7 +420,7 @@ const Commun = {
     // Compteurs dans les cases de filtre + ligne de synthèse
     CONTRATS.forEach(([k]) => { const e = document.getElementById("nb-c-" + k); if (e) e.textContent = parMetier.filter(o => familleContrat(o) === k).length; });
     NIVEAUX.forEach(([k]) => { const e = document.getElementById("nb-n-" + k); if (e) e.textContent = parMetier.filter(o => niv(o) === k).length; });
-    document.getElementById("compte").innerHTML = `<b>${n}</b> offre${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""} sur ${total} — ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} coché${f.metiers.size > 1 ? "s" : ""}${f.competences.size ? ` · ${f.competences.size} compétence${f.competences.size > 1 ? "s" : ""}` : ""}.`;
+    document.getElementById("compte").innerHTML = `<b>${n.toLocaleString("fr-FR")}</b> offre${n > 1 ? "s" : ""} sur ${total.toLocaleString("fr-FR")} · ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""}${f.competences.size ? ` · ${f.competences.size} compétence${f.competences.size > 1 ? "s" : ""}` : ""}`;
     document.getElementById("aucune").hidden = n > 0;
     const resume = document.getElementById("resume-filtres");
     if (resume) resume.textContent = `Modifier les filtres · ${n} offre${n > 1 ? "s" : ""}`;
