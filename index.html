@@ -9,22 +9,17 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/MarkerCluster.min.css">
 <script src="https://cdn.jsdelivr.net/npm/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=8">
+<link rel="stylesheet" href="assets/commun.css?v=9">
 </head>
 <body>
 <main>
   <div id="nav-ici"></div>
-  <section class="page-hero hero-home">
-    <div class="hero-copy">
-      <span class="page-kicker">Observatoire du marché de l’emploi</span>
-      <h1>Le marché du marketing, <em>en clair.</em></h1>
-      <p class="hero-lead">Explorez les offres en marketing digital et opérationnel, puis filtrez le marché selon ce qui vous intéresse réellement.</p>
+  <section class="page-intro">
+    <div>
+      <p class="breadcrumb">Observatoire des métiers du marketing</p>
+      <h1>Marché de l’emploi en marketing digital et opérationnel</h1>
+      <p class="intro-lead">Analyse des offres actives pour comprendre les volumes de recrutement, les rémunérations, les compétences recherchées et les principaux recruteurs.</p>
       <p class="sous" id="sous">Chargement des données…</p>
-    </div>
-    <div class="hero-side">
-      <span>Mis à jour automatiquement</span>
-      <strong id="hero-total">—</strong>
-      <small>offres actives suivies</small>
     </div>
   </section>
 
@@ -33,7 +28,7 @@
 
   <!-- ============ 2. ESSENTIEL ============ -->
   <section class="section-essentiel">
-    <div class="titre-section"><div><span class="sur-titre">Vue d'ensemble</span><h2>L'essentiel de votre sélection</h2></div><span class="aide-section">Les 4 chiffres à retenir</span></div>
+    <div class="section-heading"><div><p class="section-eyebrow">Indicateurs clés</p><h2>Vue d’ensemble</h2></div><p>Principaux repères de la sélection en cours.</p></div>
     <div class="chiffres chiffres-principaux" id="chiffres"></div>
     <div class="lecture lecture-legere" aria-labelledby="lecture-titre">
       <div><h3 id="lecture-titre">À retenir</h3></div>
@@ -42,16 +37,24 @@
   </section>
 
   <!-- ============ 3. CHOISIR UNE ANALYSE ============ -->
-  <div class="titre-section"><div><span class="sur-titre">Approfondir</span><h2>Choisir une analyse</h2></div><span class="aide-section">Vos filtres restent actifs d'une page à l'autre</span></div>
-  <div class="liens">
-    <a class="lien" href="salaires.html"><b>Salaires</b><span><i id="cle-salaires">—</i><br>Fourchettes et niveaux de rémunération.</span></a>
-    <a class="lien" href="exigences.html"><b>Compétences</b><span><i id="cle-exigences">—</i><br>Expérience, diplôme, outils et compétences.</span></a>
-    <a class="lien" href="recruteurs.html"><b>Recruteurs</b><span><i id="cle-recruteurs">—</i><br>Entreprises, secteurs et dernières offres.</span></a>
-    <a class="lien" href="mouvement.html"><b>Évolution</b><span><i id="cle-mouvement">—</i><br>Fraîcheur, historique et qualité des données.</span></a>
-  </div>
+  <section class="analysis-directory">
+    <div class="section-heading">
+      <div>
+        <p class="section-eyebrow">Explorer les données</p>
+        <h2>Analyses disponibles</h2>
+      </div>
+      <p>Les filtres appliqués sur cette page sont conservés dans les autres analyses.</p>
+    </div>
+    <div class="analysis-links">
+      <a href="salaires.html"><span class="analysis-index">01</span><div><b>Rémunérations</b><p id="cle-salaires">—</p></div><span class="arrow">→</span></a>
+      <a href="exigences.html"><span class="analysis-index">02</span><div><b>Compétences & exigences</b><p id="cle-exigences">—</p></div><span class="arrow">→</span></a>
+      <a href="recruteurs.html"><span class="analysis-index">03</span><div><b>Recruteurs & secteurs</b><p id="cle-recruteurs">—</p></div><span class="arrow">→</span></a>
+      <a href="mouvement.html"><span class="analysis-index">04</span><div><b>Évolution du marché</b><p id="cle-mouvement">—</p></div><span class="arrow">→</span></a>
+    </div>
+  </section>
 
   <!-- ============ 4. CARTE ============ -->
-  <div class="titre-section"><div><span class="sur-titre">Géographie</span><h2>Où sont les offres ?</h2></div></div>
+  <div class="section-heading"><div><p class="section-eyebrow">Répartition territoriale</p><h2>Localisation des offres</h2></div><p>Carte des annonces disposant d’une localisation exploitable.</p></div>
   <div class="carte large"><h3>Chaque point est une offre — survolez pour la lire, cliquez pour l'ouvrir</h3>
     <div class="carte-outils">
       <button data-vue="france">France</button>
@@ -72,7 +75,7 @@
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=8"></script>
+<script src="assets/commun.js?v=9"></script>
 <script>
 /* ============ Accueil : chiffres, carte, départements, contrats ============ */
 let carte, calque;
@@ -92,8 +95,7 @@ function rendre(offres, D) {
     [avecSal.length ? euro(mediane(mins), 100) + " → " + euro(mediane(maxs), 100) : "—", "fourchette salariale médiane affichée"],
   ];
   document.getElementById("chiffres").innerHTML = tuiles.map(([v, l]) => `<div class="chiffre"><b>${v}</b><span>${l}</span></div>`).join("");
-  const heroTotal = document.getElementById("hero-total");
-  if (heroTotal) heroTotal.textContent = n.toLocaleString("fr-FR");
+
 
   const topDep = compter(offres, o => o.dep || null)[0];
   const topContrat = compter(offres, libContratOffre)[0];
