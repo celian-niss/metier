@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce que ça paie — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
 <link rel="stylesheet" href="assets/commun.css?v=13">
 </head>
 <body>
@@ -42,12 +43,22 @@
     <div class="carte large"><div class="card-head"><div><h3>Qui affiche le plus souvent un salaire ?</h3><p>Part des offres avec rémunération renseignée selon le type de contrat.</p></div></div><div class="zone"><canvas id="g-couverture-contrat"></canvas></div><p class="insight" id="insight-couverture"></p></div>
   </div>
 
+  <div class="titre-section"><div><span class="sur-titre">Du descriptif à l’inférence</span><h2>Tester ce que les écarts semblent montrer</h2></div><span class="aide-section">Hypothèse → test adapté → p-value + taille d’effet</span></div>
+  <section class="stat-tests-grid" aria-label="Analyses statistiques">
+    <article class="carte stat-test-card" id="test-t-salaire"></article>
+    <article class="carte stat-test-card" id="test-anova-salaire"></article>
+    <article class="carte stat-test-card" id="test-correlation-salaire"></article>
+    <article class="carte stat-test-card" id="test-regression-salaire"></article>
+  </section>
+  <p class="note stat-method-note">Ces tests décrivent les associations observées dans les annonces disponibles. Une p-value n’indique ni l’importance pratique d’un effet ni une causalité : Pulse affiche donc aussi la taille d’effet et l’effectif utilisé.</p>
+
   <p class="note" style="margin-top:12px">Les analyses salariales portent uniquement sur les annonces qui affichent une rémunération. Elles décrivent donc un sous-échantillon du marché et ne doivent pas être lues comme un salaire garanti pour l’ensemble des postes.</p>
 
   <footer id="pied"></footer>
 </main>
 
 <script src="assets/commun.js?v=13"></script>
+<script src="assets/stats.js?v=1"></script>
 <script>
 /* ============ Ce que ça paie ============ */
 function rendre(offres, D) {
@@ -58,19 +69,19 @@ function rendre(offres, D) {
   const milieux = avecSal.map(o => o.smax != null ? (o.smin + o.smax) / 2 : o.smin);
   const q1 = quantile(milieux, .25), q3 = quantile(milieux, .75);
   document.getElementById("fiabilite-salaire").innerHTML = avecSal.length
-    ? `<span class="fiabilite-badge">${avecSal.length >= 30 ? "Échantillon solide" : avecSal.length >= 10 ? "Échantillon moyen" : "Échantillon faible"}</span><span>${pct(avecSal.length, n)} % des offres sélectionnées affichent un salaire. Les graphiques ci-dessous ne décrivent que ce sous-ensemble.</span>`
+    ? `<span class="fiabilite-badge">${avecSal.length.toLocaleString("fr-FR")} observations</span><span>Couverture : ${pct(avecSal.length, n)} % des offres sélectionnées. Les analyses portent uniquement sur les annonces qui publient une rémunération.</span>`
     : `<span class="fiabilite-badge faible">Pas de données salariales</span><span>Aucune offre de cette sélection ne permet une analyse salariale.</span>`;
 
   document.getElementById("phrase-salaire").innerHTML = avecSal.length < 5
     ? (avecSal.length ? `Seulement ${avecSal.length} offre(s) de cette sélection affichent un salaire : trop peu pour en tirer quoi que ce soit.` : "Aucune offre de cette sélection n'affiche de salaire.")
     : `Sur les <b>${avecSal.length}</b> offres qui affichent un salaire (${pct(avecSal.length, n)} % de la sélection), la moitié propose entre <b>${euro(q1, 100)}</b> et <b>${euro(q3, 100)}</b> brut par an, soit environ <b>${euro(net(q1), 10)}</b> à <b>${euro(net(q3), 10)}</b> net par mois.`;
 
-  const med = mediane(milieux), p90 = quantile(milieux, .9);
+  const med = mediane(milieux), moy = moyenneStat(milieux), et = ecartTypeStat(milieux), iqr = q3 == null || q1 == null ? null : q3 - q1;
   document.getElementById("stats-salaires").innerHTML = [
-    [avecSal.length, "offres avec salaire"],
-    [n ? pct(avecSal.length, n) + " %" : "—", "couverture salariale"],
     [med != null ? euro(med, 100) : "—", "médiane annuelle"],
-    [p90 != null ? euro(p90, 100) : "—", "90e percentile"]
+    [moy != null ? euro(moy, 100) : "—", "moyenne annuelle"],
+    [iqr != null ? euro(iqr, 100) : "—", "écart interquartile (Q3 − Q1)"],
+    [et != null ? euro(et, 100) : "—", "écart-type"]
   ].map(([v,l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
 
   // a) par niveau de poste
@@ -102,12 +113,12 @@ function rendre(offres, D) {
   ].map(x => ({ label: x.label, n: x.lot.length, paire: fourchette(x.lot) })).filter(x => x.paire && x.n >= 3));
 
   /* Distribution : histogramme du milieu de fourchette. */
-  const BINS = [
-    ["< 25 k€", 0, 25000], ["25–30 k€", 25000, 30000], ["30–35 k€", 30000, 35000],
-    ["35–40 k€", 35000, 40000], ["40–50 k€", 40000, 50000], ["50–60 k€", 50000, 60000],
-    ["60 k€ et +", 60000, Infinity]
-  ];
   const salairesPlausibles = milieux.filter(v => v >= 12000 && v <= 200000);
+  const PAS_SALAIRE = 5000;
+  const debutSalaire = 10000, finSalaire = 100000;
+  const BINS = [];
+  for (let x = debutSalaire; x < finSalaire; x += PAS_SALAIRE) BINS.push([`${x/1000}–${(x+PAS_SALAIRE)/1000} k€`, x, x + PAS_SALAIRE]);
+  BINS.push(["100 k€ et +", finSalaire, Infinity]);
   const hist = BINS.map(([label,min,max]) => [label, salairesPlausibles.filter(v => v >= min && v < max).length]);
   barres("g-paie-distribution", hist.map(x => x[0]), hist.map(x => x[1]), false, " offres");
   const modal = [...hist].sort((a,b) => b[1]-a[1])[0];
@@ -129,8 +140,22 @@ function rendre(offres, D) {
   const juniorSal = points.filter(p => p.x <= 2).map(p => p.y);
   const seniorSal = points.filter(p => p.x >= 5).map(p => p.y);
   const medJunior = mediane(juniorSal), medSenior = mediane(seniorSal);
-  document.getElementById("insight-exp").innerHTML = medJunior != null && medSenior != null && juniorSal.length >= 5 && seniorSal.length >= 5
-    ? `<b>Lecture :</b> médiane observée à ${euro(medJunior,100)} pour ≤ 2 ans d’expérience contre ${euro(medSenior,100)} pour ≥ 5 ans.`
+  const corrExp = pearsonStat(points.map(p => p.x), points.map(p => p.y));
+  const regExp = regressionLineaire(points.map(p => p.x), points.map(p => p.y));
+  if (regExp && points.length >= 3) {
+    const xs = points.map(p => p.x), xmin = Math.min(...xs), xmax = Math.max(...xs);
+    const ligne = [{x:xmin,y:regExp.intercept+regExp.pente*xmin},{x:xmax,y:regExp.intercept+regExp.pente*xmax}];
+    const g = graphiques["g-paie-exp"];
+    if (g) {
+      g.data.datasets = [
+        { data: points, backgroundColor: "rgba(98,91,246,.5)", pointRadius: 4, pointHoverRadius: 6 },
+        { type:"line", label:"Régression linéaire", data:ligne, borderColor:"#0f9f85", backgroundColor:"transparent", pointRadius:0, borderWidth:2, tension:0 }
+      ];
+      g.update();
+    }
+  }
+  document.getElementById("insight-exp").innerHTML = corrExp
+    ? `<b>Lecture :</b> ${points.length} offres combinent expérience et salaire. Corrélation de Pearson <b>r = ${formatStat(corrExp.r)}</b> (${formatP(corrExp.p)}), soit une association ${effetR(corrExp.r)}. Cela ne démontre pas que l’expérience cause à elle seule le niveau de salaire.`
     : `<b>Lecture :</b> ${points.length} offres combinent une expérience chiffrée et un salaire exploitable.`;
 
   /* Couverture salariale par type de contrat. */
@@ -143,6 +168,55 @@ function rendre(offres, D) {
   document.getElementById("insight-couverture").innerHTML = meilleure
     ? `<b>Lecture :</b> les offres en <b>${meilleure[0]}</b> sont celles qui publient le plus souvent un salaire dans cette sélection (${meilleure[1]} %).`
     : "Aucune comparaison disponible.";
+
+  /* CM2 — tests choisis selon la nature des variables. */
+  const tt = welchTTest(juniorSal, seniorSal);
+  document.getElementById("test-t-salaire").innerHTML = tt ? carteTestStat({
+    titre: "Test t de Welch",
+    question: "Les offres demandant ≤ 2 ans et celles demandant ≥ 5 ans affichent-elles le même salaire moyen ?",
+    h0: "les deux groupes ont le même salaire moyen.",
+    resultat: `<b>t = ${formatStat(tt.t)}</b> · ${formatP(tt.p)}`,
+    effet: `d = ${formatStat(tt.d)} · ${effetCohen(tt.d)}`,
+    effectif: `n₁ = ${tt.n1} · n₂ = ${tt.n2}`,
+    interpretation: tt.p != null && tt.p < .05
+      ? `La différence observée est statistiquement compatible avec un écart entre les deux groupes, avec un effet ${effetCohen(tt.d)}. On ne conclut pas à une causalité de l’expérience.`
+      : `Avec cet échantillon, on ne met pas en évidence de différence de moyenne au seuil de 5 %. Cela ne prouve pas que les deux populations sont identiques.`
+  }) : carteTestStat({titre:"Test t de Welch",question:"Comparer les salaires moyens de deux groupes d’expérience.",h0:"les deux moyennes sont égales.",resultat:"Données insuffisantes",effectif:`≤2 ans : ${juniorSal.length} · ≥5 ans : ${seniorSal.length}`,interpretation:"Il faut au moins deux observations salariales dans chaque groupe."});
+
+  const groupesNiveau = NIVEAUX.map(([k,l]) => ({label:l,valeurs:avecSal.filter(o=>niv(o)===k).map(o=>o.smax!=null?(o.smin+o.smax)/2:o.smin)}));
+  const av = anovaUnFacteur(groupesNiveau);
+  document.getElementById("test-anova-salaire").innerHTML = av ? carteTestStat({
+    titre: "ANOVA à un facteur",
+    question: "Le salaire moyen diffère-t-il selon le niveau de poste ?",
+    h0: "tous les niveaux comparés ont la même moyenne.",
+    resultat: `<b>F(${av.df1}, ${av.df2}) = ${formatStat(av.f)}</b> · ${formatP(av.p)}`,
+    effet: `η² = ${formatStat(av.eta2)} · ${effetEta2(av.eta2)}`,
+    effectif: `n = ${av.n} · ${av.groupes.length} groupes`,
+    interpretation: av.p != null && av.p < .05
+      ? `Au moins un niveau présente une moyenne différente. La taille d’effet est ${effetEta2(av.eta2)} ; l’ANOVA ne dit pas, à elle seule, quels couples de niveaux diffèrent.`
+      : "Aucune différence globale de moyenne n’est mise en évidence au seuil de 5 % sur la sélection actuelle."
+  }) : carteTestStat({titre:"ANOVA à un facteur",question:"Comparer plusieurs niveaux de poste sur une variable quantitative.",h0:"les moyennes sont égales.",resultat:"Données insuffisantes",interpretation:"Il faut au moins deux niveaux disposant chacun d’au moins deux salaires."});
+
+  document.getElementById("test-correlation-salaire").innerHTML = corrExp ? carteTestStat({
+    titre: "Corrélation de Pearson",
+    question: "L’expérience demandée et le salaire affiché évoluent-ils ensemble ?",
+    h0: "la corrélation linéaire dans la population est nulle.",
+    resultat: `<b>r = ${formatStat(corrExp.r)}</b> · ${formatP(corrExp.p)}`,
+    effet: `|r| : ${effetR(corrExp.r)}`,
+    effectif: `n = ${corrExp.n}`,
+    interpretation: `L’association linéaire observée est ${effetR(corrExp.r)} et ${corrExp.r >= 0 ? "positive" : "négative"}. Corrélation ne signifie pas causalité : métier, responsabilité, territoire ou contrat peuvent aussi intervenir.`
+  }) : carteTestStat({titre:"Corrélation de Pearson",question:"Mesurer l’association linéaire entre deux variables quantitatives.",h0:"r = 0.",resultat:"Données insuffisantes",interpretation:"Il faut au moins trois offres combinant expérience chiffrée et salaire."});
+
+  document.getElementById("test-regression-salaire").innerHTML = regExp ? carteTestStat({
+    titre: "Régression linéaire simple",
+    question: "Quelle tendance salariale linéaire est associée à une année d’expérience supplémentaire dans les annonces ?",
+    h0: "la pente de la droite est nulle.",
+    resultat: `<b>pente = ${euro(regExp.pente, 10)} / an</b> · R² = ${formatStat(regExp.r2)}`,
+    effet: `R² = ${(100*regExp.r2).toLocaleString("fr-FR",{maximumFractionDigits:1})} % de variance expliquée`,
+    effectif: `n = ${regExp.n}`,
+    interpretation: `Dans ce modèle descriptif à une seule variable, +1 an d’expérience est associé à environ ${euro(regExp.pente,10)} sur le salaire annuel affiché. Le modèle explique ${(100*regExp.r2).toLocaleString("fr-FR",{maximumFractionDigits:1})} % de la dispersion ; le reste dépend d’autres facteurs.`,
+    avertissement: "Cette droite décrit les annonces observées ; elle ne permet pas de prédire un salaire individuel ni d’inférer un effet causal."
+  }) : carteTestStat({titre:"Régression linéaire simple",question:"Relier une variable explicative quantitative à une variable à expliquer quantitative.",h0:"pente = 0.",resultat:"Données insuffisantes",interpretation:"Le modèle nécessite des couples expérience–salaire exploitables."});
 }
 
 Commun.demarrer(rendre);
