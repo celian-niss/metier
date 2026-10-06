@@ -412,3 +412,51 @@ footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line)}
 @media (prefers-reduced-motion:reduce){
   *,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* ===== Analyses statistiques — application du CM2 ===== */
+.stat-tests-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin:0 0 18px;
+}
+.stat-test-card{
+  padding:20px;
+  border-top:3px solid var(--violet);
+}
+.stat-test-wide{margin:0 0 52px;padding:20px;border-top:3px solid var(--violet)}
+.stat-test-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:12px}
+.stat-test-head>span{
+  padding:5px 8px;border-radius:999px;background:var(--violet-soft);color:var(--violet-2);
+  font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase
+}
+.stat-test-head h3{margin:0;font:700 16px/1.2 Manrope,sans-serif;letter-spacing:-.025em}
+.stat-question{margin:0 0 10px;color:var(--ink-2);font-size:12px;line-height:1.55}
+.stat-h0{
+  margin:0 0 13px;padding:9px 10px;border-radius:9px;background:var(--surface-soft);
+  color:var(--muted);font-size:10.5px
+}
+.stat-h0 b{color:var(--ink-2)}
+.stat-result{
+  margin:0 0 10px;padding:13px 14px;border:1px solid rgba(109,93,252,.18);
+  border-radius:11px;background:linear-gradient(145deg,#fff,#f7f4ff);
+  color:var(--ink-2);font-size:12px
+}
+.stat-result b{font:700 17px Manrope,sans-serif;color:var(--ink)}
+.stat-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
+.stat-meta span{
+  display:flex;flex-direction:column;gap:2px;padding:8px 10px;border:1px solid var(--line);
+  border-radius:9px;background:#fff;color:var(--ink-2);font-size:10px
+}
+.stat-meta b{color:var(--muted);font-size:8.5px;letter-spacing:.06em;text-transform:uppercase}
+.stat-interpretation{margin:0;color:var(--ink-2);font-size:11px;line-height:1.6}
+.stat-warning{
+  margin:11px 0 0;padding:9px 10px;border-radius:9px;background:#fff8e8;
+  color:#8a5a0a;font-size:10px;line-height:1.5
+}
+.stat-method-note{margin:-4px 0 52px}
+@media(max-width:800px){
+  .stat-tests-grid{grid-template-columns:1fr}
+  .stat-test-wide{margin-bottom:38px}
+}
