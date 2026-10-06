@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Qui recrute — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<link rel="stylesheet" href="assets/commun.css?v=11">
+<link rel="stylesheet" href="assets/commun.css?v=12">
 </head>
 <body>
 <main>
@@ -33,13 +33,20 @@
     <details class="carte large analyse-secondaire"><summary>Voir les employeurs ouverts aux débutants</summary><div class="details-body"><p class="note" id="sous-juniors"></p><div class="zone haute"><canvas id="g-juniors"></canvas></div></div></details>
   </div>
 
+  <div class="titre-section"><div><span class="sur-titre">Structure du recrutement</span><h2>Le marché est-il concentré ?</h2></div><span class="aide-section">Mesurer le poids des grands publieurs et l’ouverture aux juniors</span></div>
+  <div class="grille">
+    <div class="carte"><div class="card-head"><div><h3>Concentration des annonces</h3><p>Part cumulée des offres captée par les principaux employeurs.</p></div></div><div class="zone"><canvas id="g-concentration"></canvas></div><p class="insight" id="insight-concentration"></p></div>
+    <div class="carte"><div class="card-head"><div><h3>Taille des publieurs</h3><p>Nombre d’offres publiées par employeur identifié.</p></div></div><div class="zone"><canvas id="g-taille-publieurs"></canvas></div><p class="insight" id="insight-publieurs"></p></div>
+    <div class="carte large"><div class="card-head"><div><h3>Secteurs les plus ouverts aux débutants</h3><p>Part d’offres acceptant un débutant, pour les secteurs suffisamment représentés.</p></div></div><div class="zone haute"><canvas id="g-secteurs-juniors"></canvas></div><p class="insight" id="insight-secteurs-juniors"></p></div>
+  </div>
+
   <div class="titre-section"><div><span class="sur-titre">Opportunités</span><h2>Dernières offres de ces recruteurs</h2></div><a class="section-link" href="offres.html">Explorer toutes les offres →</a></div>
   <div class="job-grid" id="liste-offres"></div>
 
   <footer id="pied"></footer>
 </main>
 
-<script src="assets/commun.js?v=11"></script>
+<script src="assets/commun.js?v=12"></script>
 <script>
 /* ============ Qui recrute ============ */
 function rendre(offres, D) {
@@ -84,6 +91,47 @@ function rendre(offres, D) {
                 y: { stacked: true, grid: { display: true } } } });
   document.getElementById("sous-juniors").textContent =
     `— ${juniors.length} offres de votre sélection sont ouvertes à quelqu'un sans expérience ; ${ouvertes.length} nomment leur employeur, voici ceux qui en publient le plus`;
+
+  /* Concentration : part cumulée des offres par rang d'employeur. */
+  const nommesParEmployeur = compter(offres.filter(o => o.entreprise), o => o.entreprise);
+  const totalNommes = nommesParEmployeur.reduce((s,x) => s + x[1], 0);
+  let cumul = 0;
+  const courbeConcentration = nommesParEmployeur.slice(0,20).map(([nom,nb], i) => {
+    cumul += nb;
+    return { rang: i + 1, part: pct(cumul, totalNommes), nom };
+  });
+  dessiner("g-concentration", "line",
+    { labels: courbeConcentration.map(x => "Top " + x.rang),
+      datasets: [{ label: "Part cumulée", data: courbeConcentration.map(x => x.part), borderColor: couleur, backgroundColor: pale, fill: true, tension: .25, pointRadius: 3 }] },
+    { plugins: { tooltip: { callbacks: { label: c => `${c.parsed.y} % des offres avec employeur identifié` } } },
+      scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + " %" } }, x: { grid: { display: false } } } });
+  const top10part = courbeConcentration[9] ? courbeConcentration[9].part : (courbeConcentration.at(-1)?.part || 0);
+  document.getElementById("insight-concentration").innerHTML =
+    `<b>Lecture :</b> les 10 premiers employeurs représentent <b>${top10part} %</b> des offres dont l’employeur est identifié.`;
+
+  /* Distribution du nombre d'offres par employeur. */
+  const tailles = [
+    ["1 offre", nommesParEmployeur.filter(x => x[1] === 1).length],
+    ["2 à 4", nommesParEmployeur.filter(x => x[1] >= 2 && x[1] <= 4).length],
+    ["5 à 9", nommesParEmployeur.filter(x => x[1] >= 5 && x[1] <= 9).length],
+    ["10 ou +", nommesParEmployeur.filter(x => x[1] >= 10).length]
+  ];
+  anneau("g-taille-publieurs", tailles.map(x => x[0]), tailles.map(x => x[1]), " employeurs");
+  document.getElementById("insight-publieurs").innerHTML = nommesParEmployeur.length
+    ? `<b>Lecture :</b> ${pct(tailles[0][1], nommesParEmployeur.length)} % des employeurs identifiés ne publient qu’une seule offre dans la sélection.`
+    : "Aucun employeur identifié dans cette sélection.";
+
+  /* Ouverture aux juniors par secteur, uniquement avec un minimum de volume. */
+  const secteursTous = compter(offres, o => secteurCourt(o.secteur));
+  const secteursJunior = secteursTous.map(([secteur, nb]) => {
+    const lot = offres.filter(o => secteurCourt(o.secteur) === secteur);
+    return [secteur, pct(lot.filter(debutantAccepte).length, lot.length), nb];
+  }).filter(x => x[2] >= 10).sort((a,b) => b[1]-a[1]).slice(0,10);
+  zoneSelonBarres("g-secteurs-juniors", secteursJunior.length, 44);
+  barres("g-secteurs-juniors", secteursJunior.map(x => enLignes(x[0], 28)), secteursJunior.map(x => x[1]), true, " %");
+  document.getElementById("insight-secteurs-juniors").innerHTML = secteursJunior.length
+    ? `<b>Lecture :</b> parmi les secteurs comptant au moins 10 offres, <b>${secteursJunior[0][0]}</b> est le plus ouvert aux débutants (${secteursJunior[0][1]} %).`
+    : "Pas assez de volume sectoriel pour comparer l’ouverture aux débutants.";
 
   /* ---- Dernières offres ---- */
   const recentes = [...offres].sort((a, b) => (b.date || "").localeCompare(a.date || "")).slice(0, 12);
