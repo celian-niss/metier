@@ -58,10 +58,10 @@ const dateFr = (s, bref = false) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(
 // Âge d'une annonce en jours, par rapport à la date d'extraction.
 const age = o => { const jour = Date.parse(D.date), t = Date.parse(o.date); return (isFinite(jour) && isFinite(t)) ? (jour - t) / 86400000 : null; };
 
-const couleur = "#0a5cff", pale = "rgba(10,92,255,.25)";
-const COULEURS = { Marketing: "#0a5cff", Digital: "#ff6a00", Frontière: "#8e8e93" };
+const couleur = "#625bf6", pale = "rgba(98,91,246,.12)";
+const COULEURS = { Marketing: "#625bf6", Digital: "#10a37f", Frontière: "#94a3b8" };
 // Palette des niveaux : du clair au foncé, assistant → directeur, « autre » en gris. Valable sur toute la page.
-const COUL_NIV = { assistant: "#a7c9ff", charge: "#5f9bf5", responsable: "#2a6ad4", directeur: "#123a7a", autre: "#b4b4bc" };
+const COUL_NIV = { assistant: "#d8d6ff", charge: "#aaa5ff", responsable: "#746cf7", directeur: "#4338ca", autre: "#cbd5e1" };
 // Sur ces trois teintes claires, le texte blanc n'est pas lisible : on écrit en encre foncée.
 const ENCRE_FONCEE = new Set(["assistant", "charge", "autre"]);
 const NIVEAUX_DEFAUT = [["assistant", "Assistant·e / junior"], ["charge", "Chargé·e"], ["responsable", "Responsable"], ["directeur", "Directeur·rice"], ["autre", "Autre"]];
@@ -72,8 +72,16 @@ const AURA = new Set(["01", "03", "07", "15", "26", "38", "42", "43", "63", "69"
 const IDF = new Set(["75", "77", "78", "91", "92", "93", "94", "95"]);
 const EXPS = ["Débutant accepté", "Moins d'un an", "1 à 2 ans", "3 à 4 ans", "5 ans et plus", "Non précisé"];
 
-Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+Chart.defaults.font.family = "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif";
+Chart.defaults.color = "#64748b";
+Chart.defaults.borderColor = "rgba(148,163,184,.16)";
 Chart.defaults.plugins.legend.display = false;
+Chart.defaults.plugins.tooltip.backgroundColor = "#111827";
+Chart.defaults.plugins.tooltip.titleColor = "#fff";
+Chart.defaults.plugins.tooltip.bodyColor = "#e5e7eb";
+Chart.defaults.plugins.tooltip.padding = 11;
+Chart.defaults.plugins.tooltip.cornerRadius = 10;
+Chart.defaults.plugins.tooltip.displayColors = false;
 
 let D, graphiques = {};
 let NIVEAUX = NIVEAUX_DEFAUT, FORMATIONS = FORMATIONS_DEFAUT;
@@ -226,10 +234,10 @@ function filtrer(f) {
    ============================================================ */
 const PAGES = [
   ["index.html", "Accueil"],
-  ["salaires.html", "Ce que ça paie"],
-  ["exigences.html", "Ce qu'on vous demande"],
-  ["recruteurs.html", "Qui recrute"],
-  ["mouvement.html", "Le marché bouge"],
+  ["salaires.html", "Salaires"],
+  ["exigences.html", "Compétences"],
+  ["recruteurs.html", "Recruteurs"],
+  ["mouvement.html", "Évolution"],
 ];
 // Chemins relatifs partout : le site vit dans un sous-dossier (/metier/) sur GitHub Pages.
 const PAGE_ICI = (location.pathname.split("/").pop() || "index.html");
@@ -281,10 +289,11 @@ function poserNavEtFiltres() {
     <header class="topbar">
       <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
         <span class="pulse-mark">P</span>
-        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Marketing & Digital</small></span>
+        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire marketing</small></span>
       </a>
       <nav class="nav">` + PAGES.map(([url, lib]) =>
         `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>
+      <div class="data-status" id="header-maj"><i></i><span>Chargement…</span></div>
     </header>`;
 
   const f = document.getElementById("filtres-ici");
@@ -355,7 +364,9 @@ const Commun = {
 
       const sous = document.getElementById("sous");
       if (sous) sous.innerHTML =
-        `${d.source} · ${d.requete} · extraction du <b>${dateFr(d.date)}</b> · ${d.offres.length} offres actives, ${d.versions_conservees} versions d'annonces conservées`;
+        `Données France Travail · <b>${d.offres.length.toLocaleString("fr-FR")} offres actives</b> · mise à jour le ${dateFr(d.date)}`;
+      const headerMaj = document.getElementById("header-maj");
+      if (headerMaj) headerMaj.innerHTML = `<i class="ok"></i><span>Mis à jour le ${dateFr(d.date, true)}</span>`;
 
       let memo = null;
       try { memo = JSON.parse(localStorage.getItem("metiers-filtres")); } catch (e) {}
