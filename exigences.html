@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Ce qu'on vous demande — les métiers du marketing</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jstat@1.9.6/dist/jstat.min.js"></script>
 <link rel="stylesheet" href="assets/commun.css?v=13">
 </head>
 <body>
@@ -38,6 +39,9 @@
     <div class="carte"><div class="card-head"><div><h3>Compétences qui apparaissent ensemble</h3><p>Paires d’outils les plus fréquentes dans une même annonce.</p></div></div><div class="zone"><canvas id="g-paires-outils"></canvas></div><p class="insight" id="insight-paires"></p></div>
   </div>
 
+  <div class="titre-section"><div><span class="sur-titre">Association entre variables</span><h2>Une différence visible est-elle structurée ?</h2></div><span class="aide-section">Deux variables qualitatives → test du Chi²</span></div>
+  <article class="carte stat-test-card stat-test-wide" id="test-chi2-anglais"></article>
+
   <div class="titre-section"><div><span class="sur-titre">Pour aller plus loin</span><h2>Expérience, diplôme et compétences officielles</h2></div></div>
   <div class="grille">
     <div class="carte"><div class="card-head"><h3>Expérience demandée</h3></div><div class="zone"><canvas id="g-experience"></canvas></div></div>
@@ -49,6 +53,7 @@
 </main>
 
 <script src="assets/commun.js?v=13"></script>
+<script src="assets/stats.js?v=1"></script>
 <script>
 /* ============ Ce qu'on vous demande ============ */
 function rendre(offres, D) {
@@ -166,6 +171,35 @@ function rendre(offres, D) {
   document.getElementById("insight-paires").innerHTML = topPaires.length
     ? `<b>Lecture :</b> la combinaison la plus fréquente est <b>${topPaires[0][0]}</b>, présente dans ${topPaires[0][1]} offres.`
     : "Aucune combinaison suffisamment fréquente dans cette sélection.";
+
+  /* CM2 — deux variables qualitatives : séniorité regroupée × mention de l'anglais. */
+  const juniorsChi = offres.filter(o => ["assistant","charge"].includes(niv(o)));
+  const seniorsChi = offres.filter(o => ["responsable","directeur"].includes(niv(o)));
+  const anglaisOui = lot => lot.filter(o => (o.outils || []).includes("Anglais")).length;
+  const tableChi = [
+    [anglaisOui(juniorsChi), juniorsChi.length - anglaisOui(juniorsChi)],
+    [anglaisOui(seniorsChi), seniorsChi.length - anglaisOui(seniorsChi)]
+  ];
+  const chi = chiDeux(tableChi);
+  document.getElementById("test-chi2-anglais").innerHTML = chi ? carteTestStat({
+    titre: "Test du Chi² d’indépendance",
+    question: "La mention de l’anglais est-elle associée au niveau de séniorité des postes ?",
+    h0: "la mention de l’anglais est indépendante du groupe junior/senior.",
+    resultat: `<b>χ²(${chi.df}) = ${formatStat(chi.chi2)}</b> · ${formatP(chi.p)}`,
+    effet: `V de Cramér = ${formatStat(chi.v)} · ${effetCramer(chi.v)}`,
+    effectif: `n = ${chi.n} · juniors ${juniorsChi.length} · seniors ${seniorsChi.length}`,
+    interpretation: chi.p != null && chi.p < .05
+      ? `La fréquence de mention de l’anglais diffère selon les deux groupes dans la sélection actuelle. L’intensité de l’association est ${effetCramer(chi.v)} ; elle ne dit pas que la séniorité cause cette exigence.`
+      : `Aucune association statistiquement mise en évidence au seuil de 5 % dans la sélection actuelle. L’absence de significativité n’est pas une preuve d’indépendance parfaite.`,
+    avertissement: chi.hypothesesOk ? "" : `Prudence : ${chi.faibles} cellule(s) sur ${chi.cellules} ont un effectif théorique < 5. Les conditions usuelles du Chi² sont fragiles pour cette sélection.`
+  }) : carteTestStat({
+    titre: "Test du Chi² d’indépendance",
+    question: "La mention de l’anglais est-elle associée au niveau de séniorité des postes ?",
+    h0: "les deux variables sont indépendantes.",
+    resultat: "Données insuffisantes",
+    effectif: `juniors : ${juniorsChi.length} · seniors : ${seniorsChi.length}`,
+    interpretation: "Il faut des observations dans les deux groupes et dans les deux modalités pour appliquer ce test."
+  });
 }
 
 Commun.demarrer(rendre);
