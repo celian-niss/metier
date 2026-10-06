@@ -10,8 +10,14 @@
 <body>
 <main>
   <div id="nav-ici"></div>
-  <h1>Qui recrute</h1>
-  <p class="sous" id="sous">Chargement des données…</p>
+  <section class="page-hero">
+    <div class="hero-copy">
+      <span class="page-kicker">Recruteurs</span>
+      <h1>Qui recrute vraiment ?</h1>
+      <p class="hero-lead">Identifiez les employeurs, les secteurs les plus actifs et les opportunités les plus récentes.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+  </section>
 
   <div id="filtres-ici"></div>
 
@@ -20,15 +26,15 @@
     <div class="lecture-grille" id="lecture-recruteurs"></div>
   </section>
 
-  <div class="grille" style="margin-top:24px">
-    <div class="carte"><h3>Entreprises qui publient le plus</h3><div class="zone"><canvas id="g-entreprises"></canvas></div></div>
-    <div class="carte"><h3>Secteurs d'activité <small>— quand l'annonce le précise</small></h3><div class="zone"><canvas id="g-secteurs"></canvas></div></div>
-    <div class="carte large"><h3>Qui recrute des débutants ? <small id="sous-juniors">— les employeurs qui publient le plus d'offres ouvertes à quelqu'un sans expérience</small></h3><div class="zone haute"><canvas id="g-juniors"></canvas></div>
-      <p class="note">Une offre est comptée ici si elle est en alternance, ou si l'annonce indique « débutant accepté ». Ce sont les premiers noms à qui écrire quand on sort de formation — en gardant en tête que certains de ces publieurs sont des écoles ou des agences qui recrutent pour le compte d'autres entreprises.</p></div>
+  <div class="titre-section"><div><span class="sur-titre">Marché</span><h2>Les recruteurs les plus actifs</h2></div></div>
+  <div class="grille">
+    <div class="carte analyse-principale"><div class="card-head"><h3>Entreprises qui publient le plus</h3></div><div class="zone"><canvas id="g-entreprises"></canvas></div></div>
+    <div class="carte"><div class="card-head"><h3>Secteurs d’activité</h3><p>Quand l’annonce le précise.</p></div><div class="zone"><canvas id="g-secteurs"></canvas></div></div>
+    <details class="carte large analyse-secondaire"><summary>Voir les employeurs ouverts aux débutants</summary><div class="details-body"><p class="note" id="sous-juniors"></p><div class="zone haute"><canvas id="g-juniors"></canvas></div></div></details>
   </div>
 
-  <h2>Les dernières offres <small id="nb-offres"></small></h2>
-  <div class="liste" id="liste-offres"></div>
+  <div class="titre-section"><div><span class="sur-titre">Opportunités</span><h2>Dernières offres</h2></div><span class="aide-section" id="nb-offres"></span></div>
+  <div class="liste job-list" id="liste-offres"></div>
   <p class="note" style="margin-top:10px">Les douze plus récentes de votre sélection. Le reste est dans <code>data/</code> sur le dépôt.</p>
 
   <footer id="pied"></footer>
@@ -85,14 +91,22 @@ function rendre(offres, D) {
   document.getElementById("nb-offres").textContent = n ? `— les 12 plus récentes sur ${n}` : "";
   document.getElementById("liste-offres").innerHTML = recentes.length ? recentes.map(o => {
     const k = niv(o);
-    return `<div class="item">
-      <div class="titre">${o.url ? `<a href="${o.url}" target="_blank" rel="noopener">${o.intitule}</a>` : o.intitule}</div>
-      <div class="meta"><span>${o.entreprise || "employeur non précisé"}</span><span>·</span><span>${o.lieu || "lieu non précisé"}</span>
-        <span>·</span><span>${libContratOffre(o)}</span>
-        ${salaireCourt(o) ? `<span>·</span><span class="sal">${salaireCourt(o)}</span>` : ""}
-        <span class="etiq" style="background:${COUL_NIV[k]}${ENCRE_FONCEE.has(k) ? ";color:#1d1d1f" : ""}">${libNiv(k)}</span>
-        <span>·</span><span>publiée le ${dateFr(o.date)}</span></div>
-    </div>`;
+    return `<article class="item job-card">
+      <div class="job-main">
+        <div class="job-title">${o.intitule || "Offre sans intitulé"}</div>
+        <div class="job-company">${o.entreprise || "Employeur non précisé"}</div>
+        <div class="job-meta-row">
+          <span>${o.lieu || "Lieu non précisé"}</span>
+          <span>${libContratOffre(o)}</span>
+          <span>${dateFr(o.date)}</span>
+        </div>
+        <div class="job-tags">
+          <span class="etiq" style="background:${COUL_NIV[k]}${ENCRE_FONCEE.has(k) ? ";color:#1d1d1f" : ""}">${libNiv(k)}</span>
+          ${salaireCourt(o) ? `<span class="job-salary">${salaireCourt(o)}</span>` : ""}
+        </div>
+      </div>
+      ${o.url ? `<a class="job-cta" href="${o.url}" target="_blank" rel="noopener">Voir l’offre <span>↗</span></a>` : ""}
+    </article>`;
   }).join("") : `<p class="note">Aucune offre dans cette sélection.</p>`;
 }
 
