@@ -25,6 +25,7 @@ function quantile(a, q) {
 }
 const compter = (liste, cle) => { const c = new Map(); for (const x of liste) { const k = cle(x); if (k == null || k === "") continue; c.set(k, (c.get(k) || 0) + 1); } return [...c].sort((a, b) => b[1] - a[1]); };
 const court = (s, n) => !s ? "—" : (s.length > n ? s.slice(0, n - 1) + "…" : s);
+const echapper = v => String(v ?? "").replace(/[&<>"\']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "\'":"&#39;" }[c]));
 /* Le libellé de salaire de France Travail, rendu lisible : « Mensuel de 2500.0 Euros à
    2500.0 Euros » -> « 2 500 € brut par mois ». Le commentaire libre qui suit un tiret
    (« - Salaire horaire : Smic horaire (+ majoration…) ») est coupé : il fait trois lignes
@@ -58,10 +59,10 @@ const dateFr = (s, bref = false) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(
 // Âge d'une annonce en jours, par rapport à la date d'extraction.
 const age = o => { const jour = Date.parse(D.date), t = Date.parse(o.date); return (isFinite(jour) && isFinite(t)) ? (jour - t) / 86400000 : null; };
 
-const couleur = "#625bf6", pale = "rgba(98,91,246,.12)";
-const COULEURS = { Marketing: "#625bf6", Digital: "#10a37f", Frontière: "#94a3b8" };
-// Palette des niveaux : du clair au foncé, assistant → directeur, « autre » en gris. Valable sur toute la page.
-const COUL_NIV = { assistant: "#d8d6ff", charge: "#aaa5ff", responsable: "#746cf7", directeur: "#4338ca", autre: "#cbd5e1" };
+const couleur = "#6d5dfc", pale = "rgba(109,93,252,.10)";
+const COULEURS = { Marketing: "#6d5dfc", Digital: "#0f9f85", Frontière: "#64748b" };
+// Palette des niveaux : même grammaire visuelle dans tous les graphiques.
+const COUL_NIV = { assistant: "#ddd8ff", charge: "#b8adff", responsable: "#8575ff", directeur: "#5546d8", autre: "#cbd5e1" };
 // Sur ces trois teintes claires, le texte blanc n'est pas lisible : on écrit en encre foncée.
 const ENCRE_FONCEE = new Set(["assistant", "charge", "autre"]);
 const NIVEAUX_DEFAUT = [["assistant", "Assistant·e / junior"], ["charge", "Chargé·e"], ["responsable", "Responsable"], ["directeur", "Directeur·rice"], ["autre", "Autre"]];
@@ -72,16 +73,22 @@ const AURA = new Set(["01", "03", "07", "15", "26", "38", "42", "43", "63", "69"
 const IDF = new Set(["75", "77", "78", "91", "92", "93", "94", "95"]);
 const EXPS = ["Débutant accepté", "Moins d'un an", "1 à 2 ans", "3 à 4 ans", "5 ans et plus", "Non précisé"];
 
-Chart.defaults.font.family = "Inter, system-ui, -apple-system, 'Segoe UI', sans-serif";
-Chart.defaults.color = "#64748b";
-Chart.defaults.borderColor = "rgba(148,163,184,.16)";
+Chart.defaults.font.family = "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = "#667085";
+Chart.defaults.borderColor = "rgba(15,23,42,.08)";
 Chart.defaults.plugins.legend.display = false;
-Chart.defaults.plugins.tooltip.backgroundColor = "#111827";
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.pointStyle = "circle";
+Chart.defaults.plugins.legend.labels.boxWidth = 7;
+Chart.defaults.plugins.legend.labels.padding = 16;
+Chart.defaults.plugins.tooltip.backgroundColor = "#14121f";
 Chart.defaults.plugins.tooltip.titleColor = "#fff";
-Chart.defaults.plugins.tooltip.bodyColor = "#e5e7eb";
-Chart.defaults.plugins.tooltip.padding = 11;
+Chart.defaults.plugins.tooltip.bodyColor = "#e9e7f2";
+Chart.defaults.plugins.tooltip.padding = 12;
 Chart.defaults.plugins.tooltip.cornerRadius = 10;
 Chart.defaults.plugins.tooltip.displayColors = false;
+Chart.defaults.animation.duration = 220;
 
 let D, graphiques = {};
 let NIVEAUX = NIVEAUX_DEFAUT, FORMATIONS = FORMATIONS_DEFAUT;
@@ -251,30 +258,37 @@ function filtrer(f) {
   });
 }
 
-/* Carte d'offre réutilisable sur l'accueil, la page Offres et les recruteurs. */
+/* Carte d'offre réutilisable : dense, scannable et sûre pour les données externes. */
 function carteOffre(o) {
   const k = niv(o);
-  const outils = (o.outils || []).slice(0, 3);
+  const outils = (o.outils || o.competences || []).slice(0, 4);
   const titre = o.intitule || "Offre sans intitulé";
   const entreprise = o.entreprise || "Employeur non précisé";
+  const experience = trancheExp(o);
+  const lieu = o.lieu || "Lieu non précisé";
+  const salaire = salaireCourt(o);
+  const url = o.url ? echapper(o.url) : "";
   return `<article class="job-card-v2">
     <div class="job-card-top">
       <div class="job-card-heading">
-        <span class="job-card-date">${o.date ? dateFr(o.date) : "Date non précisée"}</span>
-        <h3>${titre}</h3>
-        <p>${entreprise}</p>
+        <div class="job-card-eyebrow">
+          <span class="job-card-date">${o.date ? dateFr(o.date) : "Date non précisée"}</span>
+          <span class="job-contract">${echapper(libContratOffre(o))}</span>
+        </div>
+        <h3>${echapper(titre)}</h3>
+        <p>${echapper(entreprise)}</p>
       </div>
-      <span class="job-contract">${libContratOffre(o)}</span>
     </div>
     <div class="job-card-meta">
-      <span>${o.lieu || "Lieu non précisé"}</span>
-      <span>${libNiv(k)}</span>
-      ${o.teletravail ? '<span>Télétravail</span>' : ""}
+      <span>${echapper(lieu)}</span>
+      <span>${echapper(libNiv(k))}</span>
+      <span>${echapper(experience)}</span>
+      ${o.teletravail ? '<span class="remote">Télétravail</span>' : ""}
     </div>
-    ${outils.length ? `<div class="job-card-skills">${outils.map(x => `<span>${x}</span>`).join("")}</div>` : ""}
+    ${outils.length ? `<div class="job-card-skills">${outils.map(x => `<span>${echapper(x)}</span>`).join("")}</div>` : ""}
     <div class="job-card-bottom">
-      <div class="job-card-pay">${salaireCourt(o) || "Salaire non communiqué"}</div>
-      ${o.url ? `<a class="job-card-link" href="${o.url}" target="_blank" rel="noopener">Voir l’offre <span aria-hidden="true">↗</span></a>` : '<span class="job-card-link disabled">Lien indisponible</span>'}
+      <div class="job-card-pay"><small>Rémunération</small><b>${echapper(salaire || "Non communiquée")}</b></div>
+      ${url ? `<a class="job-card-link" href="${url}" target="_blank" rel="noopener noreferrer" aria-label="Consulter l’offre ${echapper(titre)}">Consulter <span aria-hidden="true">↗</span></a>` : '<span class="job-card-link disabled">Lien indisponible</span>'}
     </div>
   </article>`;
 }
@@ -282,80 +296,107 @@ function carteOffre(o) {
 /* ============================================================
    4) NAVIGATION ET PANNEAU DE FILTRES, IDENTIQUES PARTOUT
    ============================================================ */
-const PAGES = [
-  ["index.html", "Accueil"],
+const NAV_PRINCIPALE = [
+  ["index.html", "Vue d’ensemble"],
   ["offres.html", "Offres"],
-  ["salaires.html", "Salaires"],
-  ["exigences.html", "Compétences"],
-  ["recruteurs.html", "Recruteurs"],
-  ["mouvement.html", "Évolution"],
+  ["observatoire.html", "Marché"],
 ];
-// Chemins relatifs partout : le site vit dans un sous-dossier (/metier/) sur GitHub Pages.
+const NAV_ANALYSES = [
+  ["salaires.html", "Salaires", "Rémunérations et distributions"],
+  ["exigences.html", "Compétences", "Outils, expérience et formation"],
+  ["recruteurs.html", "Recruteurs", "Entreprises et concentration"],
+  ["mouvement.html", "Évolution", "Fraîcheur et dynamique du marché"],
+];
 const PAGE_ICI = (location.pathname.split("/").pop() || "index.html");
+const ANALYSE_ACTIVE = NAV_ANALYSES.some(([url]) => url === PAGE_ICI);
 
 const HTML_FILTRES = `
-  <div class="filtres-rapides">
+  <div class="filter-quickbar">
     <div class="filtre-rapide">
-      <div class="filtre-titre"><span class="etape">1</span><div><h3>Famille de métiers</h3><p>Commencez large, puis affinez si besoin.</p></div></div>
+      <div class="filtre-titre">
+        <div><span class="filter-label">Familles de métiers</span><p>Sélection large</p></div>
+        <button type="button" class="lien-filtre" id="ouvrir-metiers">Métiers précis</button>
+      </div>
       <div class="groupes groupes-principaux" id="groupes"></div>
-      <button type="button" class="lien-filtre" id="ouvrir-metiers">Choisir les métiers un par un</button>
     </div>
     <div class="filtre-rapide">
-      <div class="filtre-titre"><span class="etape">2</span><div><h3>Type de contrat</h3><p>Gardez uniquement les contrats qui vous intéressent.</p></div></div>
+      <div class="filtre-titre"><div><span class="filter-label">Contrats</span><p>Plusieurs choix possibles</p></div></div>
       <div class="cases cases-inline" id="f-contrats"></div>
     </div>
   </div>
 
   <details class="filtres-avances" id="filtres-avances">
-    <summary><span><b>Affiner la sélection</b><small>Métier précis, niveau de poste, compétences</small></span><span class="resume-avance" id="resume-avance"></span></summary>
+    <summary>
+      <span><b>Filtres avancés</b><small>Métier précis, niveau de poste et compétences</small></span>
+      <span class="resume-avance" id="resume-avance">Optionnel</span>
+    </summary>
     <div class="filtres">
       <div class="filtre-metiers-detail">
-        <h3>Métiers précis</h3>
-        <label class="recherche-filtre"><input id="recherche-metier" type="search" aria-label="Rechercher un métier" placeholder="Rechercher un métier…"></label>
+        <div class="filter-section-head"><div><span class="filter-label">Métier précis</span><p>Les codes ROME restent visibles uniquement comme métadonnée.</p></div></div>
+        <label class="recherche-filtre"><span>Rechercher</span><input id="recherche-metier" type="search" aria-label="Rechercher un métier" placeholder="Ex. chef de projet, communication…"></label>
         <div class="metiers" id="metiers"></div>
         <div class="boutons">
-          <button data-groupe="tous" type="button">Tout cocher</button>
-          <button data-groupe="aucun" type="button">Tout décocher</button>
+          <button data-groupe="tous" type="button">Tout sélectionner</button>
+          <button data-groupe="aucun" type="button">Tout désélectionner</button>
         </div>
       </div>
       <div>
-        <h3>Niveau de poste</h3>
+        <div class="filter-section-head"><div><span class="filter-label">Niveau de poste</span><p>Détection à partir de l’intitulé.</p></div></div>
         <div class="cases" id="f-niveaux"></div>
       </div>
       <div class="filtre-competences">
-        <h3>Compétences <small>— optionnel</small></h3>
-        <label class="recherche-filtre"><input id="recherche-competence" type="search" aria-label="Rechercher une compétence" placeholder="SEO, CRM, GA4…"></label>
+        <div class="filter-section-head"><div><span class="filter-label">Compétences</span><p>Au moins une compétence sélectionnée doit apparaître.</p></div></div>
+        <label class="recherche-filtre"><span>Rechercher</span><input id="recherche-competence" type="search" aria-label="Rechercher une compétence" placeholder="SEO, CRM, GA4…"></label>
         <div class="cases cases-competences" id="f-competences"></div>
-        <div class="boutons">
-          <button type="button" id="competences-vider">Effacer les compétences</button>
-        </div>
+        <div class="boutons"><button type="button" id="competences-vider">Effacer les compétences</button></div>
       </div>
     </div>
   </details>
-  <div class="barre-resultat"><p class="compte" id="compte"></p><button type="button" class="reset-filtres" id="reset-filtres">Réinitialiser</button></div>`;
+
+  <div class="barre-resultat">
+    <p class="compte" id="compte" aria-live="polite"></p>
+    <button type="button" class="reset-filtres" id="reset-filtres">Réinitialiser</button>
+  </div>`;
+
+function navLien(url, lib) {
+  return `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`;
+}
 
 function poserNavEtFiltres() {
   const n = document.getElementById("nav-ici");
   if (n) n.outerHTML = `
     <header class="topbar">
-      <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
-        <span class="pulse-mark">P</span>
-        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire des métiers du marketing</small></span>
+      <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — accueil">
+        <span class="pulse-mark" aria-hidden="true">P</span>
+        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire emploi · marketing & digital</small></span>
       </a>
-      <nav class="nav" aria-label="Navigation principale">` + PAGES.map(([url, lib]) =>
-        `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>
+      <nav class="nav" aria-label="Navigation principale">
+        ${NAV_PRINCIPALE.map(([url, lib]) => navLien(url, lib)).join("")}
+        <details class="nav-analyses"${ANALYSE_ACTIVE ? " open" : ""}>
+          <summary${ANALYSE_ACTIVE ? ' class="ici" aria-current="page"' : ""}>Analyses <span aria-hidden="true">⌄</span></summary>
+          <div class="nav-popover">
+            ${NAV_ANALYSES.map(([url, lib, desc]) => `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}><b>${lib}</b><small>${desc}</small></a>`).join("")}
+          </div>
+        </details>
+      </nav>
       <div class="data-status" id="header-maj"><i></i><span>Chargement…</span></div>
     </header>`;
 
   const f = document.getElementById("filtres-ici");
   if (f) f.outerHTML = (PAGE_ICI === "index.html"
-    ? `<section class="carte panneau-filtres"><div class="panneau-filtres-head"><div><span class="sur-titre">Personnaliser</span><h2>Qu'est-ce que vous cherchez ?</h2></div><span class="aide-filtre">2 étapes suffisent pour commencer</span></div>${HTML_FILTRES}</section>`
-    : `<details class="carte panneau-filtres"><summary id="resume-filtres">Modifier les filtres</summary>${HTML_FILTRES}</details>`)
-    + `<div class="vide" id="aucune" hidden>Aucune offre ne correspond à ces filtres. Modifiez votre sélection.</div>`;
+    ? `<section class="carte panneau-filtres filter-home"><div class="panneau-filtres-head"><div><span class="sur-titre">Votre sélection</span><h2>Personnalisez le marché observé</h2><p>Deux choix rapides suffisent. Les analyses se recalculent automatiquement.</p></div><span class="aide-filtre">Filtres synchronisés entre les pages</span></div>${HTML_FILTRES}</section>`
+    : `<details class="carte panneau-filtres filter-dock"><summary id="resume-filtres">Modifier les filtres</summary>${HTML_FILTRES}</details>`)
+    + `<div class="vide" id="aucune" hidden><b>Aucune offre ne correspond à cette sélection.</b><span>Élargissez un métier, un contrat ou une compétence.</span></div>`;
 
   const p = document.getElementById("pied");
   if (p) p.innerHTML =
-    `<div class="footer-simple"><span>Pulse Emploi · Projet étudiant M2 MOD · Données France Travail mises à jour quotidiennement.</span><a href="mouvement.html#limites">Méthode et limites</a></div>`;
+    `<div class="footer-simple"><div><b>Pulse Emploi</b><span>Projet universitaire · IAE Clermont Auvergne · données issues des collectes du projet.</span></div><div><a href="mouvement.html#limites">Méthode & limites</a><a href="observatoire.html">Couverture des données</a></div></div>`;
+
+  document.addEventListener("click", e => {
+    document.querySelectorAll(".nav-analyses[open]").forEach(menu => {
+      if (!menu.contains(e.target)) menu.open = false;
+    });
+  });
 }
 
 /* ============================================================
