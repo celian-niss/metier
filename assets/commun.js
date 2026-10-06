@@ -233,11 +233,11 @@ function filtrer(f) {
    4) NAVIGATION ET PANNEAU DE FILTRES, IDENTIQUES PARTOUT
    ============================================================ */
 const PAGES = [
-  ["index.html", "Vue d’ensemble"],
-  ["salaires.html", "Rémunérations"],
+  ["index.html", "Accueil"],
+  ["salaires.html", "Salaires"],
   ["exigences.html", "Compétences"],
   ["recruteurs.html", "Recruteurs"],
-  ["mouvement.html", "Évolution du marché"],
+  ["mouvement.html", "Évolution"],
 ];
 // Chemins relatifs partout : le site vit dans un sous-dossier (/metier/) sur GitHub Pages.
 const PAGE_ICI = (location.pathname.split("/").pop() || "index.html");
@@ -286,38 +286,25 @@ const HTML_FILTRES = `
 function poserNavEtFiltres() {
   const n = document.getElementById("nav-ici");
   if (n) n.outerHTML = `
-    <header class="site-header">
-      <div class="institution-bar">
-        <div class="institution-inner">
-          <span>Projet universitaire · Master Marketing Opérationnel & Digital</span>
-          <span id="header-maj">Chargement des données…</span>
-        </div>
-      </div>
-      <div class="brand-row">
-        <a class="site-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
-          <span class="site-brand-mark">PE</span>
-          <span class="site-brand-copy">
-            <b>Pulse Emploi</b>
-            <small>Observatoire des métiers du marketing</small>
-          </span>
-        </a>
-        <div class="source-badge">Données France Travail</div>
-      </div>
-      <nav class="site-nav" aria-label="Navigation principale">` + PAGES.map(([url, lib]) =>
+    <header class="topbar">
+      <a class="pulse-brand" href="index.html" aria-label="Pulse Emploi — Accueil">
+        <span class="pulse-mark">P</span>
+        <span class="pulse-brand-text"><b>Pulse Emploi</b><small>Observatoire marketing</small></span>
+      </a>
+      <nav class="nav">` + PAGES.map(([url, lib]) =>
         `<a href="${url}"${url === PAGE_ICI ? ' class="ici" aria-current="page"' : ""}>${lib}</a>`).join("") + `</nav>
+      <div class="data-status" id="header-maj"><i></i><span>Chargement…</span></div>
     </header>`;
 
   const f = document.getElementById("filtres-ici");
-  if (f) f.outerHTML =
-    `<details class="filter-panel">
-      <summary id="resume-filtres"><span><b>Filtrer les données</b><small>Métiers, contrats, niveaux et compétences</small></span><span class="filter-summary-count">Afficher les filtres</span></summary>
-      <div class="filter-panel-body">${HTML_FILTRES}</div>
-    </details>
-    <div class="vide" id="aucune" hidden>Aucune offre ne correspond à ces filtres. Modifiez votre sélection.</div>`;
+  if (f) f.outerHTML = (PAGE_ICI === "index.html"
+    ? `<section class="carte panneau-filtres"><div class="panneau-filtres-head"><div><span class="sur-titre">Personnaliser</span><h2>Qu'est-ce que vous cherchez ?</h2></div><span class="aide-filtre">2 étapes suffisent pour commencer</span></div>${HTML_FILTRES}</section>`
+    : `<details class="carte panneau-filtres"><summary id="resume-filtres">Modifier les filtres</summary>${HTML_FILTRES}</details>`)
+    + `<div class="vide" id="aucune" hidden>Aucune offre ne correspond à ces filtres. Modifiez votre sélection.</div>`;
 
   const p = document.getElementById("pied");
   if (p) p.innerHTML =
-    `<div class="footer-simple"><span>Pulse Emploi · Projet universitaire · Données France Travail</span><span><a href="mouvement.html#limites">Méthodologie et limites</a> · Mise à jour quotidienne</span></div>`;
+    `<div class="footer-simple"><span>Pulse Emploi · Projet étudiant M2 MOD · Données France Travail mises à jour quotidiennement.</span><a href="mouvement.html#limites">Méthode et limites</a></div>`;
 }
 
 /* ============================================================
@@ -344,7 +331,7 @@ const Commun = {
     document.getElementById("compte").innerHTML = `<b>${n}</b> offre${n > 1 ? "s" : ""} sélectionnée${n > 1 ? "s" : ""} sur ${total} — ${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} coché${f.metiers.size > 1 ? "s" : ""}${f.competences.size ? ` · ${f.competences.size} compétence${f.competences.size > 1 ? "s" : ""}` : ""}.`;
     document.getElementById("aucune").hidden = n > 0;
     const resume = document.getElementById("resume-filtres");
-    if (resume) resume.innerHTML = `<span><b>Filtrer les données</b><small>${f.metiers.size} métier${f.metiers.size > 1 ? "s" : ""} sélectionné${f.metiers.size > 1 ? "s" : ""}</small></span><span class="filter-summary-count">${n.toLocaleString("fr-FR")} offre${n > 1 ? "s" : ""}</span>`;
+    if (resume) resume.textContent = `Modifier les filtres · ${n} offre${n > 1 ? "s" : ""}`;
     const resumeAvance = document.getElementById("resume-avance");
     if (resumeAvance) {
       const niveauxTous = f.niveaux.size === NIVEAUX.length;
@@ -379,7 +366,7 @@ const Commun = {
       if (sous) sous.innerHTML =
         `Données France Travail · <b>${d.offres.length.toLocaleString("fr-FR")} offres actives</b> · mise à jour le ${dateFr(d.date)}`;
       const headerMaj = document.getElementById("header-maj");
-      if (headerMaj) headerMaj.textContent = `Dernière mise à jour : ${dateFr(d.date)}`;
+      if (headerMaj) headerMaj.innerHTML = `<i class="ok"></i><span>Mis à jour le ${dateFr(d.date, true)}</span>`;
 
       let memo = null;
       try { memo = JSON.parse(localStorage.getItem("metiers-filtres")); } catch (e) {}
