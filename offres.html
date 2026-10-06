@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offres d'emploi — Pulse Emploi</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="assets/commun.css?v=11">
+</head>
+<body>
+<main>
+  <div id="nav-ici"></div>
+
+  <section class="page-hero page-hero-compact">
+    <div class="hero-copy">
+      <span class="page-kicker">Offres d'emploi</span>
+      <h1>Explorez les offres qui composent le marché.</h1>
+      <p class="hero-lead">Filtrez le marché puis consultez directement les annonces correspondant à votre recherche.</p>
+      <p class="sous" id="sous">Chargement des données…</p>
+    </div>
+  </section>
+
+  <div id="filtres-ici"></div>
+
+  <section class="offers-toolbar" aria-label="Outils de recherche">
+    <label class="offers-search">
+      <span>Rechercher dans les offres</span>
+      <input id="offres-recherche" type="search" placeholder="Intitulé, entreprise, outil…" aria-label="Rechercher dans les offres">
+    </label>
+    <label class="offers-sort">
+      <span>Trier par</span>
+      <select id="offres-tri" aria-label="Trier les offres">
+        <option value="recent">Plus récentes</option>
+        <option value="salary">Salaire affiché</option>
+        <option value="company">Entreprise</option>
+      </select>
+    </label>
+  </section>
+
+  <div class="offers-heading">
+    <div>
+      <span class="sur-titre">Résultats</span>
+      <h2 id="offres-titre">Offres correspondant à votre sélection</h2>
+    </div>
+    <span class="offers-count" id="offres-count"></span>
+  </div>
+
+  <div class="job-grid" id="offres-liste"></div>
+  <div class="offers-more-wrap">
+    <button class="offers-more" id="offres-plus" type="button">Afficher plus d'offres</button>
+  </div>
+
+  <footer id="pied"></footer>
+</main>
+
+<script src="assets/commun.js?v=11"></script>
+<script>
+let limiteOffres = 24;
+
+function offresRecherchees(offres) {
+  const q = (document.getElementById("offres-recherche").value || "").trim().toLowerCase();
+  let resultat = q ? offres.filter(o => {
+    const texte = [
+      o.intitule, o.entreprise, o.lieu, o.salaire,
+      ...(o.outils || []), ...(o.competences || [])
+    ].filter(Boolean).join(" ").toLowerCase();
+    return texte.includes(q);
+  }) : [...offres];
+
+  const tri = document.getElementById("offres-tri").value;
+  if (tri === "company") {
+    resultat.sort((a,b) => (a.entreprise || "zzzz").localeCompare(b.entreprise || "zzzz", "fr"));
+  } else if (tri === "salary") {
+    resultat.sort((a,b) => Number(b.smax || b.smin || 0) - Number(a.smax || a.smin || 0));
+  } else {
+    resultat.sort((a,b) => (b.date || "").localeCompare(a.date || ""));
+  }
+  return resultat;
+}
+
+function rendre(offres) {
+  const resultat = offresRecherchees(offres);
+  const visibles = resultat.slice(0, limiteOffres);
+  document.getElementById("offres-count").textContent =
+    resultat.length.toLocaleString("fr-FR") + " offre" + (resultat.length > 1 ? "s" : "");
+  document.getElementById("offres-liste").innerHTML = visibles.length
+    ? visibles.map(carteOffre).join("")
+    : '<div class="empty-state"><b>Aucune offre trouvée</b><span>Essayez de modifier les filtres ou votre recherche.</span></div>';
+  const plus = document.getElementById("offres-plus");
+  plus.hidden = visibles.length >= resultat.length;
+}
+
+document.getElementById("offres-recherche").addEventListener("input", () => {
+  limiteOffres = 24;
+  rendre(filtrer(Commun.f));
+});
+document.getElementById("offres-tri").addEventListener("change", () => {
+  limiteOffres = 24;
+  rendre(filtrer(Commun.f));
+});
+document.getElementById("offres-plus").addEventListener("click", () => {
+  limiteOffres += 24;
+  rendre(filtrer(Commun.f));
+});
+
+Commun.demarrer(rendre);
+</script>
+</body>
+</html>
